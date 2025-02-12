@@ -8,6 +8,8 @@ import openai
 from dotenv import load_dotenv
 import os
 
+import uvicorn
+
 # Cargar variables de entorno
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -16,6 +18,15 @@ if not openai.api_key:
     raise ValueError("⚠️ ERROR: La API Key de OpenAI no se encontró. Verifica tu archivo .env")
 
 app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"message": "FastAPI está funcionando en Railway 🚀"}
+
+if __name__ == "__main__":
+    
+    port = int(os.getenv("PORT", 8000))  # aca lo lee desde Railwail
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
 # Configurar CORS
 app.add_middleware(
