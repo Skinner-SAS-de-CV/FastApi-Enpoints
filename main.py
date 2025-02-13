@@ -9,6 +9,7 @@ from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
 from dotenv import load_dotenv
 
+
 # Cargar variables de entorno
 load_dotenv()
 
@@ -23,7 +24,7 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 app = FastAPI()
 
 # Configurar CORS para permitir solo el frontend en producción
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://frontend-resume-analyzer.vercel.app/")  # Cambia esto a tu URL real
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://frontend-resume-analyzer.vercel.app") 
 
 app.add_middleware(
     CORSMiddleware,
@@ -140,7 +141,7 @@ async def analyze_resume(file: UploadFile = File(...), job_desc: str = ""):
 def read_root():
     return {"message": "🚀 FastAPI Resume Analyzer está funcionando correctamente en Railway!"}
 
-"""# Configuración para producción
+# Configuración para producción
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000)) 
-    uvicorn.run(app, host="0.0.0.0", port=port)"""
+    uvicorn.run(app, host="0.0.0.0", port=port)
