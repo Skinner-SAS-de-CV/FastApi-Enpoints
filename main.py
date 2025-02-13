@@ -10,7 +10,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 
 # Cargar variables de entorno
-load_dotenv()
+load_dotenv(override=True)
 
 # Verificar que la API Key de OpenAI está configurada
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
