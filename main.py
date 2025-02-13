@@ -103,7 +103,7 @@ def generate_gpt_feedback(resume_text: str, job_desc: str) -> str:
     """
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4o mini",
         messages=[{"role": "system", "content": "Eres un experto en selección de talento."},
                   {"role": "user", "content": prompt}]
     )
