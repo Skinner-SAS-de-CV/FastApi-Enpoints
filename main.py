@@ -110,7 +110,7 @@ def generate_gpt_feedback(resume_text: str, job_desc: str) -> str:
     return response.choices[0].message.content  # Obtener la respuesta del modelo
 
 # Endpoint para analizar un currículum
-@app.post("/analyze_resume/")
+@app.post("/analyze/")
 async def analyze_resume(file: UploadFile = File(...), job_desc: str = ""):
     resume_text = extract_text(file)
     skills = extract_skills(resume_text)
