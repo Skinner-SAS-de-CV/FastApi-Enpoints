@@ -9,7 +9,6 @@ from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
 from dotenv import load_dotenv
 
-
 # Cargar variables de entorno
 load_dotenv()
 
@@ -48,21 +47,16 @@ SKILLS_LIST = {
     "adaptación al cambio", "comunicación efectiva", "proactividad", "empatía",
     "creatividad", "tolerancia a la presión", "orientación a resultados",
     "compromiso", "capacidad de aprendizaje", "innovación", "resolución de conflictos",
-    "Metodología para realizar auditoría, supervisión y evaluaciónde la gestión de riesgos.",
-    "Metodologías de gestión y medición de riesgos.","Estándares internacionales de mejores prácticas gestión yde supervisión de riesgos.",
+    "Metodología para auditoría y supervisión de riesgos.",
+    "Gestión y medición de riesgos.","Estándares internacionales de supervisión de riesgos.",
     "Análisis Financiero y Contabilidad a nivel general.",
-    "Innovación Financiera, transformación digital, Fintech,Servicios Financieros Digitales."
+    "Innovación Financiera, transformación digital, Fintech, Servicios Financieros Digitales.",
     "Legislación y marco regulatorio del sistema financiero.",
-    "Conocimientos de productos y servicios financieros.","Idiomas Inglés, deseable",
-    "Blockchain y Criptomonedas.","Metodología para realizar auditoría de sistemas, supervisión y evaluación de la gestión del riesgo tecnológico.",
-    "Estándares internacionales de mejores prácticas gestión y de supervisión de riesgo tecnológico.",
-    "Tecnologías de la Información y comunicaciones.",
-    "Sistemas de Gestión de la Seguridad de la Información.",
-    "Marcos de gestión de Ciberseguridad.",
-    "Sistema de Gestión de la Continuidad del Negocio.",
-    "Prácticas para desarrollo seguro.",
-    "Pruebas de vulnerabilidad y penetración, metodología y herramientas.",
-    "Informática forense.","mapas de riesgos","solicitudes de autorización, renovación, modificación de Asientos Registrales de la industria aseguradora."
+    "Conocimientos de productos y servicios financieros.", "Idiomas Inglés, deseable",
+    "Blockchain y Criptomonedas.", "Auditoría de sistemas y evaluación de riesgos tecnológicos.",
+    "Seguridad de la Información.", "Marcos de gestión de Ciberseguridad.",
+    "Continuidad del Negocio.", "Pruebas de vulnerabilidad y penetración.",
+    "Informática forense.", "Mapas de riesgos.", "Gestión de la industria aseguradora."
 }
 
 # Función para extraer texto de un archivo PDF o DOCX
@@ -97,7 +91,7 @@ def generate_gpt_feedback(resume_text: str, job_desc: str) -> str:
     - Resume los puntos fuertes y débiles del candidato.
     - Explica si tiene las habilidades requeridas o no.
     - Da recomendaciones para mejorar su perfil.
-    - Que tenga experiencia relacionada a las actividades descritas a la solicitud del empleador.
+    - Considera la experiencia relacionada a las actividades descritas en la solicitud del empleador.
 
     --- Currículum ---
     {resume_text}
@@ -130,7 +124,7 @@ async def analyze_resume(file: UploadFile = File(...), job_desc: str = ""):
         "skills": skills,  
         "experience": experience,
         "decision": "Selected" if match_score > 0.7 else "No fue seleccionado",
-        "reason": "Good match" if match_score > 0.7 else "Falta de experiencia o habilidades relevantes",
+        "reason": "Buen perfil" if match_score > 0.7 else "Falta de experiencia o habilidades relevantes",
         "feedback": feedback  # 🆕 Agregado para mejorar la evaluación
     }
 
