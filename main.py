@@ -19,6 +19,8 @@ if not OPENAI_API_KEY:
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+print("🔍 API Key cargada en el backend:", os.getenv("OPENAI_API_KEY"))
+
 # Configurar FastAPI
 app = FastAPI()
 
