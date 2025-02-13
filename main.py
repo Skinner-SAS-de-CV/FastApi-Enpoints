@@ -23,13 +23,13 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 app = FastAPI()
 
 # Configurar CORS para producción y desarrollo
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")  # Usa el frontend en Railway o Vercel
+FRONTEND_URL = os.getenv("FRONTEND_URL")  # URL del frontend en producción/desarrollo
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL],  # 🔒 Permitir solo el frontend de producción
+    allow_origins=[FRONTEND_URL],  # 🔒 Permite solo el frontend
     allow_credentials=True,
-    allow_methods=["GET", "POST"],  # 🔒 Solo permitir métodos necesarios
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
