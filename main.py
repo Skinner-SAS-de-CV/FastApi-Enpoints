@@ -22,14 +22,14 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 # Configurar FastAPI
 app = FastAPI()
 
-# Configurar CORS para producción y desarrollo
-FRONTEND_URL = os.getenv("FRONTEND_URL")  # URL del frontend en producción/desarrollo
+# Configurar CORS para permitir solo el frontend en producción
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://frontend-resume-analyzer.vercel.app/")  # Cambia esto a tu URL real
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL],  # 🔒 Permite solo el frontend
+    allow_origins=[FRONTEND_URL],  # Permitir solo el frontend de Vercel
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "OPTIONS"],  # Agregar OPTIONS
     allow_headers=["*"],
 )
 
