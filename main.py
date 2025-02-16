@@ -29,12 +29,11 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "https://frontend-resume-analyzer-dun.v
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
+    allow_origins=[FRONTEND_URL],  # Permitir solo el frontend de Vercel
     allow_credentials=True,
-    allow_methods=["*"],  
+    allow_methods=["GET", "POST", "OPTIONS"],  # Agregar OPTIONS
     allow_headers=["*"],
 )
-
 
 # Modelo NLP para similitud semántica
 model = SentenceTransformer("all-MiniLM-L6-v2")
