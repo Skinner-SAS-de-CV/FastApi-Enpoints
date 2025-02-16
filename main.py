@@ -25,7 +25,7 @@ print("🔍 API Key cargada en el backend:", os.getenv("OPENAI_API_KEY"))
 app = FastAPI()
 
 # Configurar CORS para permitir solo el frontend en producción
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://frontend-resume-analyzer-dun.vercel.app/") 
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://frontend-resume-analyzer-dun.vercel.app") 
 
 app.add_middleware(
     CORSMiddleware,
