@@ -40,25 +40,18 @@ model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Lista de habilidades predefinidas
 SKILLS_LIST = {
-    "python", "java", "javascript", "sql", "machine learning", "data analysis",
-    "react", "aws", "administración de empresas", "economista", "auditor",
-    "cloud computing", "inteligencia artificial", "gestión de personas",
-    "diseño UX", "desarrollo de aplicaciones móviles", "producción de video",
-    "liderazgo de ventas", "traducción", "producción de audio", "NLP",
-    "trabajo en equipo", "resolución de problemas", "toma de decisiones",
+    "administración de empresas", "economista", "auditor", "gestión de personas",
+    "liderazgo de ventas", "trabajo en equipo", "resolución de problemas", "toma de decisiones",
     "adaptación al cambio", "comunicación efectiva", "proactividad", "empatía",
     "creatividad", "tolerancia a la presión", "orientación a resultados",
     "compromiso", "capacidad de aprendizaje", "innovación", "resolución de conflictos",
-    "Metodología para auditoría y supervisión de riesgos.",
+    "Metodología para auditoría y supervisión basada en riesgos.",
     "Gestión y medición de riesgos.","Estándares internacionales de supervisión de riesgos.",
     "Análisis Financiero y Contabilidad a nivel general.",
-    "Innovación Financiera, transformación digital, Fintech, Servicios Financieros Digitales.",
-    "Legislación y marco regulatorio del sistema financiero.",
+    "Innovación Financiera","Legislación y marco regulatorio del sistema financiero.",
     "Conocimientos de productos y servicios financieros.", "Idiomas Inglés, deseable",
-    "Blockchain y Criptomonedas.", "Auditoría de sistemas y evaluación de riesgos tecnológicos.",
-    "Seguridad de la Información.", "Marcos de gestión de Ciberseguridad.",
-    "Continuidad del Negocio.", "Pruebas de vulnerabilidad y penetración.",
-    "Informática forense.", "Mapas de riesgos.", "Gestión de la industria aseguradora."
+    "Seguridad de la Información.","Continuidad del Negocio.",
+     "Mapas de riesgos.", "Gestión de la industria aseguradora."
 }
 
 # Función para extraer texto de un archivo PDF o DOCX
@@ -106,7 +99,7 @@ def generate_gpt_feedback(resume_text: str, job_desc: str) -> str:
 
     response = client.chat.completions.create(
         model="gpt-4o",
-        messages=[{"role": "system", "content": "Eres un experto en selección de talento."},
+        messages=[{"role": "system", "content": "Eres un experto en selección de talento humano, planes de carrera, planes de sucesion, analisis de salarios y encuestas de clima organizacional."},
                   {"role": "user", "content": prompt}]
     )
     return response.choices[0].message.content  # Obtener la respuesta del modelo
