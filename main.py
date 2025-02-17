@@ -85,13 +85,61 @@ def generate_gpt_feedback(resume_text: str, job_desc: str) -> str:
     Analiza el siguiente currículum en comparación con la descripción del trabajo.
     - Resume los puntos fuertes y débiles del candidato.
     - Explica si tiene las habilidades requeridas o no.
-    - Da recomendaciones para mejorar su perfil.
-    - Considera la experiencia relacionada a las actividades descritas en la solicitud del empleador.
+    - Analiza si cumple con el perfil requerido para el puesto.
 
     --- Currículum ---
     {resume_text}
 
     --- Descripción del Trabajo ---
+            Preparar las solicitudes de opiniones técnicas.
+        Elaborar informes ejecutivos de resultados relevantes de la supervisión.
+        Elaborar diagnósticos y planes de trabajo de los procesos de supervisión.
+        Realizar visitas de supervisión con un enfoque basado en riesgos dando cumplimiento de
+        la normativa por parte de las entidades supervisadas, tomando en cuenta las mejores
+        prácticas y estándares internacionales y los servicios que las entidades hayan
+        tercerizado para mitigar cualquier deterioro de calidad.
+        Efectuar visitas de supervisión focalizadas, ampliadas y de cumplimiento de acuerdo con
+        el plan operativo.
+        Preparar programas de trabajo conforme actividades asignadas por el Coordinador de
+        Visita de Supervisión o el Jefe de Departamento.
+        Efectuar análisis técnicos y monitoreos requeridos por la administración superior.
+        Efectuar monitoreos periódicos de cumplimientos legales y normativos.
+        Desarrollar exámenes de auditoría de diversa índole durante las actividades de
+        supervisión realizadas en las entidades supervisadas.
+        Evaluar la gestión de riesgos desarrolladas por las entidades supervisadas
+        Documentar los presuntos incumplimientos determinados en las evaluaciones de
+        auditoría y participar en la elaboración del informe correspondiente.
+        Elaborar informe parcial de resultados de la visita de supervisión.
+        Realizar propuesta de informe para la solicitud de inicio del proceso administrativo
+        sancionador por señalamiento de presuntos incumplimientos como resultado de las
+        auditorías.
+        Elaborar informes de procesos administrativos sancionatorios derivados de presuntos
+        incumplimientos legales o normativos determinados en las visitas de supervisión.
+        Responder a los requerimientos del departamento de trámites para atender las
+        solicitudes de trámites presentados por los supervisados, cuando sea necesario.
+        Realizar monitoreos continuos de noticias o denuncias que señalen malas prácticas de
+        las entidades supervisadas e informar al jefe inmediato para la activación de visitas de
+        supervisión.
+        Realizar auditorías hacia los auditores internos y externos responsables de las auditorías
+        de las entidades supervisadas.
+        Realizar visitas de supervisión para verificar la adecuada implementación de
+        modificaciones a leyes y normas así como nuevo marco legal y normativo.
+        Atender y canalizar adecuadamente las consultas y solicitudes de apoyo técnico de las
+        entidades supervisadas.
+        Preparar insumos para los colegios de supervisores y mapas de riesgos.
+        Realizar y ejecutar revisiones especiales orientadas a evaluar temas particulares en los
+        supervisados, que surjan de alertas generadas por áreas de apoyo.
+        Elaborar diagnósticos y planes de trabajo de auditoría.
+        Realizar seguimiento a los descargos de las observaciones e incumplimientos
+        comunicados a las entidades.
+        Discutir durante la ejecución de las visitas de supervisión, las observaciones resultantes
+        de las actividades de supervisión con los técnicos de las entidades, cuando aplique.  
+        Contribuir en la generación de los insumos para los mapas de riesgos de las entidades
+        supervisadas.
+        Asistir a Juntas Generales Ordinarias y Extraordinarias de Accionistas de entidades
+        supervisadas para obtener información relevante. 
+        Realizar monitoreos a la calidad de los servicios tercerizados por las entidades
+        supervisadas.
     {job_desc}
 
     Proporciona un análisis claro y detallado.
@@ -118,7 +166,7 @@ async def analyze_resume(file: UploadFile = File(...), job_desc: str = ""):
         "match_score": match_score,
         "skills": skills,  
         "experience": experience,
-        "decision": "Selected" if match_score > 0.7 else "No fue seleccionado",
+        "decision": "Seleccionado" if match_score > 0.7 else "No fue seleccionado",
         "reason": "Buen perfil" if match_score > 0.7 else "Falta de experiencia o habilidades relevantes",
         "feedback": feedback  # 🆕 Agregado para mejorar la evaluación
     }
