@@ -29,10 +29,10 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "https://frontend-resume-analyzer.verce
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_URL],  # Permitir solo el frontend de Vercel
+    allow_origins=["*"],  # Esto permite todas las peticiones
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],  # Agregar OPTIONS
-    allow_headers=["*"],
+    allow_methods=["*"],  # Permite todos los métodos (GET, POST, OPTIONS)
+    allow_headers=["*"],  # Permite todos los headers
 )
 
 # Modelo NLP para similitud semántica
@@ -146,7 +146,7 @@ def generate_gpt_feedback(resume_text: str, job_desc: str) -> str:
     """
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model="gpt-4o-mini",
         messages=[{"role": "system", "content": "Eres un experto en selección de talento humano, planes de carrera, planes de sucesion, analisis de salarios y encuestas de clima organizacional."},
                   {"role": "user", "content": prompt}]
     )
@@ -166,9 +166,9 @@ async def analyze_resume(file: UploadFile = File(...), job_desc: str = ""):
         "match_score": match_score,
         "skills": skills,  
         "experience": experience,
-        "decision": "Seleccionado" if match_score > 0.7 else "No fue seleccionado",
-        "reason": "Buen perfil" if match_score > 0.7 else "Falta de experiencia o habilidades relevantes",
-        "feedback": feedback  # 🆕 Agregado para mejorar la evaluación
+        "decision": "Seleccionado" if match_score > 0.85 else "No fue seleccionado",
+        "reason": "Buen perfil" if match_score > 0.85 else "Falta de experiencia o habilidades relevantes",
+        "feedback": feedback  
     }
 
     return result
@@ -176,7 +176,7 @@ async def analyze_resume(file: UploadFile = File(...), job_desc: str = ""):
 # Verificación de que FastAPI está funcionando en producción
 @app.get("/")
 def read_root():
-    return {"message": "🚀 FastAPI Resume Analyzer está funcionando correctamente en Railway!"}
+    return {"message": "🚀 FastAPI funcionando correctamente en Railway!"}
 
 # Configuración para producción
 if __name__ == "__main__":
