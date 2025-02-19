@@ -166,8 +166,8 @@ async def analyze_resume(file: UploadFile = File(...), job_desc: str = ""):
         "match_score": match_score,
         "skills": skills,  
         "experience": experience,
-        "decision": "Seleccionado" if match_score > 0.85 else "No fue seleccionado",
-        "reason": "Buen perfil" if match_score > 0.85 else "Falta de experiencia o habilidades relevantes",
+        "decision": "Seleccionado" if match_score > 0.7 else "No fue seleccionado",
+        "reason": "Buen perfil" if match_score > 0.7 else "Falta de experiencia o habilidades relevantes",
         "feedback": feedback  
     }
 
