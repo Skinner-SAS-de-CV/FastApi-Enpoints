@@ -7,16 +7,16 @@ from dotenv import load_dotenv
 # 🔹 Cargar variables de entorno
 load_dotenv(override=True)
 
-#Configurar la conexión a PostgreSQL
+# Obtener la URL de PostgreSQL desde Railway
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-#Crear la conexión con SQLAlchemy
-engine = create_engine(DATABASE_URL, echo=True)  # `echo=True` muestra las consultas en consola (para debugging)
+# Agregar SSL si es necesario para Railway
+if DATABASE_URL and "railway.app" in DATABASE_URL:
+    DATABASE_URL += "?sslmode=require"
 
-#Configurar la sesión de la base de datos
+# Configurar SQLAlchemy
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-#Base para los modelos
 Base = declarative_base()
 
 #Modelo Cliente
