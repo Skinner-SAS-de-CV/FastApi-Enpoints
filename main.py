@@ -17,11 +17,11 @@ load_dotenv(override=True)
 # Verificar que la API Key de OpenAI está configurada
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
-    raise ValueError("⚠️ ERROR: La API Key de OpenAI no se encontró. Verifica tu archivo .env o las variables de entorno en Railway.")
+    raise ValueError("ERROR: La API Key de OpenAI no se encontró.")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-print("🔍 API Key cargada en el backend:", os.getenv("OPENAI_API_KEY"))
+print("API Key cargada en el backend:", os.getenv("OPENAI_API_KEY"))
 
 # Configurar FastAPI
 app = FastAPI()

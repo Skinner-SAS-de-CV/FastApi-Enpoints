@@ -61,3 +61,4 @@ wheel==0.45.1
 openai==1.61.1
 python-dotenv==1.0.1
 SQLAlchemy==2.0.38
+psycopg2==2.9.10
