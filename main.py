@@ -59,6 +59,14 @@ async def agregar_trabajo(
     habilidades: str = Form(...),  
     db: Session = Depends(get_db)
 ):
+    
+    print("📩 Recibiendo solicitud con los siguientes datos:")
+    print(f"Cliente: {nombre_del_cliente}")
+    print(f"Trabajo: {titulo_de_trabajo}")
+    print(f"Perfil: {perfil_del_trabajador}")
+    print(f"Funciones: {funciones_del_trabajo}")
+    print(f"Habilidades: {habilidades}")
+    
     # 🔹 Buscar si el cliente ya existe
     client = db.query(Client).filter(Client.name == nombre_del_cliente).first()
     if not client:
