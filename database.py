@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 #Configurar la conexión a PostgreSQL
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://skinner:123456@localhost:5432/trabajos")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 #Crear la conexión con SQLAlchemy
 engine = create_engine(DATABASE_URL, echo=True)  # `echo=True` muestra las consultas en consola (para debugging)
