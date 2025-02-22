@@ -72,12 +72,14 @@ async def agregar_trabajo(
     if not client:
         client = Client(name=nombre_del_cliente)
         db.add(client)
+        db.flush()
         db.commit()
         db.refresh(client)
 
     # 🔹 Crear un nuevo trabajo
     job = Job(title=titulo_de_trabajo, client_id=client.id)
     db.add(job)
+    db.flush()
     db.commit()
     db.refresh(job)
 
@@ -91,9 +93,11 @@ async def agregar_trabajo(
     # 🔹 Guardar funciones del trabajo en la base de datos
     for function in funciones_del_trabajo.split(","):
         db.add(Function(title=function.strip(), job_id=job.id))
-
+        
+    db.flush()
     db.commit()
     return {"message": "Trabajo, habilidades, perfil y funciones registradas exitosamente"}
+
 
 
 # 📌 Endpoint para **obtener trabajos por cliente**
