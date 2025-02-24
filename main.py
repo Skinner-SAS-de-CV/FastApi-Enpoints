@@ -101,7 +101,7 @@ async def agregar_trabajo(
 
 
 # 📌 Endpoint para **obtener trabajos por cliente**
-'''@app.get("/obtener_trabajos_por_cliente/{nombre_del_cliente}")
+@app.get("/obtener_trabajos_por_cliente/{nombre_del_cliente}")
 async def obtener_trabajos_por_cliente(nombre_del_cliente: str, db: Session = Depends(get_db)):
     client = db.query(Client).filter(Client.name == nombre_del_cliente).first()
     if not client:
@@ -109,7 +109,6 @@ async def obtener_trabajos_por_cliente(nombre_del_cliente: str, db: Session = De
 
     jobs = db.query(Job).filter(Job.client_id == client.id).all()
     return [{"title": job.title, "id": job.id, "client_id": job.client_id} for job in jobs]
-'''
 
 
 
