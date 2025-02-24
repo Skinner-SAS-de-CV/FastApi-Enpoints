@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 # Obtener la URL de PostgreSQL desde Railway
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("${{ Postgres.DATABASE_URL }}")
 
 # Agregar SSL si es necesario para Railway
 if DATABASE_URL and "railway.app" in DATABASE_URL:
