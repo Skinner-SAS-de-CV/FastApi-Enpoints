@@ -8,11 +8,12 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 # Obtener la URL de PostgreSQL desde Railway
-DATABASE_URL = os.getenv("${{ Postgres.DATABASE_URL }}")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Agregar SSL si es necesario para Railway
-if DATABASE_URL and "railway.app" in DATABASE_URL:
-    DATABASE_URL += "?sslmode=require"
+# Verificar que DATABASE_URL se cargó correctamente
+if not DATABASE_URL:
+    raise ValueError("ERROR: La variable de entorno DATABASE_URL no está configurada correctamente.")
+
 
 # Configurar SQLAlchemy
 engine = create_engine(DATABASE_URL)
