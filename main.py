@@ -98,9 +98,16 @@ async def agregar_trabajo(
     db.commit()
     return {"message": "Trabajo, habilidades, perfil y funciones registradas exitosamente"}
 
+# Endpoint para obtener clientes
+@app.get("/clients/")
+async def get_clients(db: Session = Depends(get_db)):
+    clients = db.query(Client).all()
+    return [{"id": c.id, "name": c.name} for c in clients]
 
 
-# 📌 Endpoint para **obtener trabajos por cliente**
+
+
+# Endpoint para **obtener trabajos por cliente**
 @app.get("/obtener_trabajos_por_cliente/{nombre_del_cliente}")
 async def obtener_trabajos_por_cliente(nombre_del_cliente: str, db: Session = Depends(get_db)):
     client = db.query(Client).filter(Client.name == nombre_del_cliente).first()
