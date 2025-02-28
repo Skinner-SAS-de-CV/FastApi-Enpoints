@@ -230,15 +230,15 @@ async def analyze_resume(
     
 
     # Ajuste en la decisión basado en el match_score
-    if match_score >= 0.7:
+    if match_score >= 0.6:
         
-        decision = "Seleccionado"
+        decision = "Puntaje Alto"
         
     elif match_score >= 0.5:
         
-        decision = "Casi Seleccionado"
+        decision = "Puntaje Promedio"
     else:
-        decision = "No fue seleccionado"
+        decision = "Puntaje Bajo"
 
     return {
         
