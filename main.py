@@ -49,7 +49,7 @@ app.add_middleware(
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
-# 📌 Endpoint para **añadir trabajos y habilidades**
+#Endpoint para **añadir trabajos y habilidades**
 @app.post("/agregar_trabajo/")
 async def agregar_trabajo(
     nombre_del_cliente: str = Form(...),
@@ -101,8 +101,10 @@ async def agregar_trabajo(
 # Endpoint para obtener clientes
 @app.get("/clients/")
 async def get_clients(db: Session = Depends(get_db)):
-    clients = db.query(Client).all()
-    return [{"id": c.id, "name": c.name} for c in clients]
+    # anterior mente se me duplicaban los clientes en el frontend
+    #ahora uso distint() para que no se dupliquen
+    client_names = db.query(Client.name).distinct().all()
+    return [{"name": c[0]} for c in client_names]
 
 
 
@@ -115,7 +117,7 @@ async def obtener_trabajos_por_cliente(nombre_del_cliente: str, db: Session = De
         return {"error": "Cliente no encontrado"}
 
     jobs = db.query(Job).filter(Job.client_id == client.id).all()
-    return [{"title": job.title, "id": job.id, "client_id": job.client_id} for job in jobs]
+    return [{"id": job.id, "title": job.title} for job in jobs]
 
 
 
