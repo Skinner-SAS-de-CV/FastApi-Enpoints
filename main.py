@@ -23,7 +23,6 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 print("API Key cargada en el backend:", os.getenv("OPENAI_API_KEY"))
 
-# Configurar FastAPI
 app = FastAPI()
 
 # Conexion con la base de datos.
@@ -34,18 +33,18 @@ def get_db():
     finally: 
         db.close()
 
-# Configurar CORS para permitir solo el frontend en producción
+
 FRONTEND_URL = os.getenv("FRONTEND_URL") 
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "https://frontend-resume-analyzer.vercel.app"], 
     allow_credentials=True,
-    allow_methods=["*"],  # Permite todos los métodos (GET, POST, OPTIONS)
-    allow_headers=["*"],  # Permite todos los headers
+    allow_methods=["*"],  
+    allow_headers=["*"], 
 )
 
-# Modelo NLP para similitud semántica
+# Modelo NLP para similitud semántica.
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
@@ -67,7 +66,7 @@ async def agregar_trabajo(
     print(f"Funciones: {funciones_del_trabajo}")
     print(f"Habilidades: {habilidades}")
     
-    # 🔹 Buscar si el cliente ya existe
+    #Buscar si el cliente ya existe
     client = db.query(Client).filter(Client.name == nombre_del_cliente).first()
     if not client:
         client = Client(name=nombre_del_cliente)
@@ -76,21 +75,21 @@ async def agregar_trabajo(
         db.commit()
         db.refresh(client)
 
-    # 🔹 Crear un nuevo trabajo
+    #Crear un nuevo trabajo
     job = Job(title=titulo_de_trabajo, client_id=client.id)
     db.add(job)
     db.flush()
     db.commit()
     db.refresh(job)
 
-    # 🔹 Guardar habilidades en la base de datos
+    # Guardar habilidades en la base de datos
     for skill in habilidades.split(","):
         db.add(Skill(name=skill.strip(), job_id=job.id))
 
-    # 🔹 Guardar perfil en la base de datos
+    # Guardar perfil en la base de datos
     db.add(Profile(name=perfil_del_trabajador.strip(), job_id=job.id))
 
-    # 🔹 Guardar funciones del trabajo en la base de datos
+    # Guardar funciones del trabajo en la base de datos
     for function in funciones_del_trabajo.split(","):
         db.add(Function(title=function.strip(), job_id=job.id))
         
@@ -223,8 +222,6 @@ async def analyze_resume(
     # Extraer texto del CV
     resume_text = extract_text(file)
 
-    # Llamar a GPT-4 para obtener feedback
-    
    
     feedback = generate_gpt_feedback(resume_text, client.name, funciones_del_trabajo, perfil_del_trabajador)
 
