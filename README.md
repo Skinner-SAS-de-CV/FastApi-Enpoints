@@ -36,19 +36,19 @@ python -m venv <nombre_de_entorno>
 Entrá en el nuevo entorno:
 
 ```
-source skinner_virtual/bin/activate
+source <nombre_de_entorno>/bin/activate
 ```
 
 Entrá en el `bin` e instala las librerias requeridas
 
 ```
-pip install -r requirements.txt
+pip install -r ../requirements.txt
 ```
 
-- Comenzá la aplicación:
+Comenzá la aplicación:
 
 ```
-
+uvicorn main:app --reload
 ```
 
 ## Comenzar aplicación con Podman
