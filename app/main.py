@@ -9,7 +9,7 @@ from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from database import Function, Profile, SessionLocal, Client, Job, Skill
+from app.database import Function, Profile, SessionLocal, Client, Job, Skill
 
 # Cargar variables de entorno
 load_dotenv(override=True)
