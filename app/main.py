@@ -38,7 +38,7 @@ FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://frontend-resume-analyzer.vercel.app"], 
+    allow_origins=["http://localhost:3000", FRONTEND_URL], 
     allow_credentials=True,
     allow_methods=["*"],  
     allow_headers=["*"], 
