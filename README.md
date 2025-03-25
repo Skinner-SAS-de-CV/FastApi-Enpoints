@@ -70,7 +70,7 @@ podman-compose down
 
 No he probado aún, pero para usar con docker, solo deberia ser cambiar `podman-compose` por `docker-compose`. Por ejemplo `docker compose up`
 
-***Por ahora, ciertos cambio requiren rehacer la imagen(o sea, borrar la imagen) y despues trater de ejecutar el comando de nuevo.**
+***Por ahora, ciertos cambio requiren rehacer la imagen(o sea, borrar la imagen) y despues tratar de ejecutar el comando de nuevo.**
 
 ### Migraciones usando podman/docker
 Por ahora, se necesito hacer manualmente. En un futuro seria mejor o hacerlo cuando se comienza el entorno o hacer un servicio especial en docker-compose.yml que solo hace la migración.
