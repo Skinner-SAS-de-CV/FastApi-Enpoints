@@ -8,6 +8,6 @@ COPY ./app /code/app
 # Adicionar archivo de variables del entorno
 COPY ./.env /code/app/.env
 
-EXPOSE 80
-
-CMD ["fastapi", "run", "app/main.py", "--port", "80"]
+# app-dir is para encontrar el main:app dentro de app,
+# y el host 0.0.0.0 es para que podamos usar localhost:8000
+CMD ["uvicorn", "main:app", "--port", "80", "--reload", "--app-dir", "app", "--host", "0.0.0.0"]

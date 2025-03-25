@@ -5,7 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 import os
-from app.database import Base
+from database import Base
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
@@ -14,7 +14,7 @@ load_dotenv(override=True)
 # access to the values within the .ini file in use.
 config = context.config
 # define database per env
-config.set_main_option('sqlalchemy.url', os.getenv("DATABASE_URL", "postgresql://username:password@localhost:5432/skinner"))
+config.set_main_option('sqlalchemy.url', os.getenv("DATABASE_URL", "postgresql+psycopg2://username:password@localhost:5432/skinner"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
