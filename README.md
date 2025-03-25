@@ -58,7 +58,7 @@ En el directorio raíz:
 podman-compose build
 podman-compose up -d
 ```
-Si querés recrear las imagenes:
+Si querés recrear las imagenes*:
 ```
 podman-compose up --force-recreate -d
 ```
@@ -69,3 +69,18 @@ podman-compose down
 ```
 
 No he probado aún, pero para usar con docker, solo deberia ser cambiar `podman-compose` por `docker-compose`. Por ejemplo `docker compose up`
+
+***Por ahora, ciertos cambio requiren rehacer la imagen(o sea, borrar la imagen) y despues tratar de ejecutar el comando de nuevo.**
+
+### Migraciones usando podman/docker
+Por ahora, se necesito hacer manualmente. En un futuro seria mejor o hacerlo cuando se comienza el entorno o hacer un servicio especial en docker-compose.yml que solo hace la migración.
+
+Entrá en la consola del entorno usando la interface de podman/docker o con el commando:
+```
+podman exec -it skinner-backend bash
+```
+Cambiá el directorio a `app/` y hacer el comando de migración:
+```
+cd app
+alembic upgrade head
+```
