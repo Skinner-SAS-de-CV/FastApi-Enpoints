@@ -100,10 +100,8 @@ async def agregar_trabajo(
 # Endpoint para obtener clientes
 @app.get("/clients/")
 async def get_clients(db: Session = Depends(get_db)):
-    # anterior mente se me duplicaban los clientes en el frontend
-    #ahora uso distint() para que no se dupliquen
-    client_names = db.query(Client.name).distinct().all()
-    return [{"name": c[0]} for c in client_names]
+    client_names = db.query(Client).all()
+    return [{"name": c.name, "id": c.id} for c in client_names]
 
 
 
