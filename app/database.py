@@ -9,6 +9,7 @@ load_dotenv()
 
 # Obtener la URL de PostgreSQL desde Railway
 DATABASE_URL = os.getenv("DATABASE_URL")
+print ("DATABASE_URL:", DATABASE_URL)
 
 # Verificar que DATABASE_URL se cargó correctamente
 if not DATABASE_URL:
