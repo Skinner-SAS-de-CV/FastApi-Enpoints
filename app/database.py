@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 # 🔹 Cargar variables de entorno
 load_dotenv()
 
-# Obtener la URL de PostgreSQL desde Railway
+# Obtener la URL de PostgreSQL
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Verificar que DATABASE_URL se cargó correctamente
