@@ -19,7 +19,8 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise ValueError("ERROR: La API Key de OpenAI no se encontró.")
 
-client = OpenAI(api_key=OPENAI_API_KEY)
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", 'https://api.openai.com')
+client = OpenAI(base_url = OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
 
 print("API Key cargada en el backend:", os.getenv("OPENAI_API_KEY"))
 
@@ -36,9 +37,11 @@ def get_db():
 
 FRONTEND_URL = os.getenv("FRONTEND_URL") 
 
+origins = ["http://localhost:3000", FRONTEND_URL]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", FRONTEND_URL], 
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],  
     allow_headers=["*"], 
