@@ -48,7 +48,7 @@ pip install -r ../requirements.txt
 Comenzá la aplicación:
 
 ```
-uvicorn main:app --reload
+uvicorn main:app --reload --app-dir app
 ```
 
 ## Comenzar aplicación con Podman
