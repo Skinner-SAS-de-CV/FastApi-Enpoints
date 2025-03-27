@@ -109,10 +109,10 @@ async def get_clients(db: Session = Depends(get_db)):
 
 
 
-# Endpoint para **obtener trabajos por cliente**
-@app.get("/obtener_trabajos_por_cliente/{nombre_del_cliente}")
-async def obtener_trabajos_por_cliente(nombre_del_cliente: str, db: Session = Depends(get_db)):
-    client = db.query(Client).filter(Client.name == nombre_del_cliente).first()
+# Endpoint para **obtener trabajos por cliente usando id de cliente**
+@app.get("/obtener_trabajos_por_cliente/{id}")
+async def obtener_trabajos_por_cliente(id: int, db: Session = Depends(get_db)):
+    client = db.query(Client).filter(Client.id == id).one_or_none()
     if not client:
         return {"error": "Cliente no encontrado"}
 
@@ -194,17 +194,17 @@ def generate_gpt_feedback(resume_text: str, nombre_del_cliente: str, funciones_d
 @app.post("/analyze/")
 async def analyze_resume(
     file: UploadFile = File(...),
-    job_title: str = Form(...),
-    client_name: str = Form(...),
+    job_id: int = Form(...),
+    client_id: int = Form(...),
     db: Session = Depends(get_db)
 ):
     # Obtener el cliente
-    client = db.query(Client).filter(Client.name == client_name).first()
+    client = db.query(Client).filter(Client.id == client_id).one_or_none()
     if not client:
         return {"error": "Cliente no encontrado"}
 
     # Obtener el trabajo desde la base de datos
-    job = db.query(Job).filter(Job.title == job_title, Job.client_id == client.id).first()
+    job = db.query(Job).filter(Job.id == job_id).one_or_none()
     if not job:
         return {"error": "Trabajo no encontrado"}
 
@@ -243,7 +243,7 @@ async def analyze_resume(
     return {
         
         "file_name": file.filename,
-        "job_title": job_title,
+        "job_title": job.title,
         "match_score": match_score,
         "decision": decision,
         "feedback": feedback if feedback is not None else "No se pudo generar feedback"
