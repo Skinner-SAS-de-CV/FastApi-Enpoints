@@ -27,6 +27,6 @@ services:
     # dentro del mismo pod, se usa la puerta del contenedor para conectar
     # por ejemplo, si fuera 5433:5432, aún se usa 5432 para conectar del backend!
     ports:
-      - '5432:5432'
+      - '5433:5432'
 volumes:
   postgres:

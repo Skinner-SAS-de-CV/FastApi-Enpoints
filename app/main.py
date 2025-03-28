@@ -19,7 +19,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise ValueError("ERROR: La API Key de OpenAI no se encontró.")
 
-OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", 'https://api.openai.com')
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", 'https://api.openai.com/v1')
 client = OpenAI(base_url = OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
 
 print("API Key cargada en el backend:", os.getenv("OPENAI_API_KEY"))
