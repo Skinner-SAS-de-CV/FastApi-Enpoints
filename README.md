@@ -27,6 +27,12 @@ We are dedicated to improving recruiting and hiring processes through advanced a
 # Como usar
 
 ## Directamente sin usar contenedor:
+Del directorio raíz, Copiá el .env.local.sample al directorio `app`:
+```
+cp .env.local.sample .env
+```
+Modificá las variables del entorno si es necesario.
+
 Creá un entorno virtual:
 ```
 cd app
@@ -53,6 +59,12 @@ uvicorn main:app --reload --app-dir app
 
 ## Comenzar aplicación con Podman
 Es necesario instalar docker o podman antes de comenzar.
+
+Instalá imagen de postgres si no la tenés
+```
+podman pull docker.io/library/postgres
+```
+
 En el directorio raíz:
 ```
 podman-compose build
