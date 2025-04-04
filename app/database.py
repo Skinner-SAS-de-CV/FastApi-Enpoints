@@ -1,10 +1,11 @@
-from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, Text
+from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, Text, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
+from datetime import datetime
 import os
 from dotenv import load_dotenv
 
-# 🔹 Cargar variables de entorno
+# Cargar variables de entorno
 load_dotenv()
 
 # Obtener la URL de PostgreSQL
@@ -67,7 +68,17 @@ class Skill(Base):
     job_id = Column(Integer, ForeignKey("tipos_de_trabajo.id", ondelete="CASCADE"), nullable=False)
 
     job = relationship("Job", back_populates="skills")
-
+    
+    
+# contactos
+class Contact(Base):
+    __tablename__ = "contactos"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+        
 #Crear las tablas en PostgreSQL
 def create_tables():
     print("Creando tablas en la base de datos...")

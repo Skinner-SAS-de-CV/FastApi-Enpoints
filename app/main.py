@@ -3,13 +3,18 @@ import uvicorn
 import PyPDF2
 import docx2txt
 import re
-from fastapi import FastAPI, UploadFile, File, Form, Depends
+from fastapi import FastAPI, UploadFile, File, Form, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from database import Function, Profile, SessionLocal, Client, Job, Skill
+from database import Function, Profile, SessionLocal, Client, Job, Skill, Contact
+import smtplib
+from email.message import EmailMessage
+from pydantic import BaseModel, EmailStr, field_validator
+import bleach
+
 
 # Cargar variables de entorno
 load_dotenv(override=True)
@@ -50,6 +55,42 @@ app.add_middleware(
 # Modelo NLP para similitud semántica.
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
+# ==========================================================
+# VALIDACIÓN Y SANITIZACIÓN DEL FORMULARIO DE CONTACTO
+# ==========================================================
+
+class ContactForm(BaseModel):
+    name: str
+    email: EmailStr
+    message: str
+
+    @field_validator("name")
+    def name_must_not_be_empty(cls, v):
+        if not v.strip():
+            raise ValueError("El nombre no puede estar vacío")
+        return v
+
+    @field_validator("message")
+    def message_must_have_min_length(cls, v):
+        if len(v.strip()) < 10:
+            raise ValueError("El mensaje debe tener al menos 10 caracteres")
+        # Sanitizamos el mensaje para eliminar etiquetas HTML potencialmente maliciosas
+        #está es una buena práctica para evitar ataques XSS
+        # y otros problemas de seguridad.
+        #así que lo hacemos con la librería bleach.
+        return bleach.clean(v)
+
+# Dependency para extraer y validar los datos del formulario
+def as_contact_form(
+    name: str = Form(...),
+    email: str = Form(...),
+    message: str = Form(...)
+):
+    return ContactForm(name=name, email=email, message=message)
+
+# ==========================================================
+# ENDPOINTS
+# ==========================================================
 
 #Endpoint para **añadir trabajos y habilidades**
 @app.post("/agregar_trabajo/")
@@ -106,9 +147,6 @@ async def get_clients(db: Session = Depends(get_db)):
     client_names = db.query(Client).all()
     return [{"name": c.name, "id": c.id} for c in client_names]
 
-
-
-
 # Endpoint para **obtener trabajos por cliente usando id de cliente**
 @app.get("/obtener_trabajos_por_cliente/{id}")
 async def obtener_trabajos_por_cliente(id: int, db: Session = Depends(get_db)):
@@ -120,6 +158,9 @@ async def obtener_trabajos_por_cliente(id: int, db: Session = Depends(get_db)):
     return [{"id": job.id, "title": job.title} for job in jobs]
 
 
+# ==========================================================
+# Funciones para analizar el CV y generar feedback
+# ==========================================================
 
 # Función para extraer texto de un archivo PDF o DOCX
 def extract_text(file: UploadFile) -> str:
@@ -130,9 +171,6 @@ def extract_text(file: UploadFile) -> str:
     elif file.filename.endswith(".docx"):
         text = docx2txt.process(file.file)
     return text.lower()  # Convertir todo a minúsculas para evitar errores de coincidencia
-
-
-
 
 # Función para extraer experiencia en años usando expresiones regulares
 def extract_experience(text: str) -> list:
@@ -189,8 +227,42 @@ def generate_gpt_feedback(resume_text: str, nombre_del_cliente: str, funciones_d
     )
     return response.choices[0].message.content
 
+# ==========================================================
+# Funcion para enviar un correo electrónico y notificación etc...
+# ==========================================================
 
-#Analizar un CV y obtener políticas del cliente
+def send_notification_email(contact: Contact):
+    EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
+    EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
+    if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
+        print("No se configuró EMAIL_ADDRESS o EMAIL_PASSWORD asi que hazlo")
+        return
+
+    msg = EmailMessage()
+    msg['Subject'] = "Nuevo contacto recibido"
+    msg['From'] = EMAIL_ADDRESS
+    msg['To'] = EMAIL_ADDRESS  
+    msg.set_content(f"""
+    Se ha recibido un nuevo mensaje de contacto:
+
+    Nombre: {contact.name}
+    Email: {contact.email}
+    Mensaje: {contact.message}
+    """)
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            smtp.send_message(msg)
+        print("Email enviado correctamente.")
+    except Exception as e:
+        print(f"Error al enviar email: {e}")
+
+
+# ==========================================================
+# Analizar un CV y obtener políticas del cliente
+# ==========================================================
+
 @app.post("/analyze/")
 async def analyze_resume(
     file: UploadFile = File(...),
@@ -208,13 +280,6 @@ async def analyze_resume(
     if not job:
         return {"error": "Trabajo no encontrado"}
 
-    # Obtener habilidades del trabajo
-    #skills = [s.name for s in db.query(Skill).filter(Skill.job_id == job.id).all()]
-
-    # Obtener funciones del trabajo
-    # con el fragmento de codigo abajo  obtengo las funciones del trabajo pero si no
-    #tengo datos me puede causar a un error por eso lo cambie en ves de query hice un join.
-    # funciones_del_trabajo = ", ".join([f.title for f in db.query(Function).filter(Function.job_id == job.id).all()])
     funciones_del_trabajo = ", ".join([f.title for f in job.functions]) if job.functions else "No especificado"
 
     # Obtener perfil del trabajador
@@ -228,7 +293,6 @@ async def analyze_resume(
 
     match_score = match_resume_to_job(resume_text, funciones_del_trabajo)
     
-
     # Ajuste en la decisión basado en el match_score
     if match_score >= 0.6:
         
@@ -249,12 +313,38 @@ async def analyze_resume(
         "feedback": feedback if feedback is not None else "No se pudo generar feedback"
         }
 
-
 # Verificación de que FastAPI está funcionando en producción
 @app.get("/")
 def read_root():
-    return {"message": "🚀 FastAPI funcionando correctamente en Railway!"}
+    return {"message": "FastAPI funcionando correctamente en Railway!"}
 
+
+# ==========================================================
+# Aqui esta el endpoint para contactos
+# ==========================================================
+
+@app.post("/contactanos/")
+async def create_contact(
+    background_tasks: BackgroundTasks,
+    name: str = Form(...),
+    email: str = Form(...),
+    message: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    new_contact = Contact(name=name, email=email, message=message)
+    db.add(new_contact)
+    db.commit()
+    db.refresh(new_contact)
+
+    # Aqui mandamos la notificacion al correo... 
+    background_tasks.add_task(send_notification_email, new_contact)
+    
+    return {
+        "message": "Tu mensaje ha sido recibido. ¡Pronto nos pondremos en contacto!",
+        "contact": {"id": new_contact.id, "name": new_contact.name}
+    }
+    
+    
 # Configuración para producción
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000)) 
