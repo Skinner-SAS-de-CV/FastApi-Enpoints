@@ -46,7 +46,7 @@ class Job(Base):
 class Function(Base):
     __tablename__ = "funciones_del_trabajo"
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True, nullable=False)
+    title = Column(Text, index=True, nullable=False)
     job_id = Column(Integer, ForeignKey("tipos_de_trabajo.id", ondelete="CASCADE"), nullable=False)
 
     job = relationship("Job", back_populates="functions")
