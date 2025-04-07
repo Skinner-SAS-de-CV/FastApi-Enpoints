@@ -61,11 +61,18 @@ model = SentenceTransformer("all-MiniLM-L6-v2")
 
 class ContactForm(BaseModel):
     name: str
+    name_company: str
     email: EmailStr
     message: str
 
     @field_validator("name")
     def name_must_not_be_empty(cls, v):
+        if not v.strip():
+            raise ValueError("El nombre no puede estar vacío")
+        return v
+    
+    @field_validator("name_company")
+    def name_company_must_not_be_empty(cls, v):
         if not v.strip():
             raise ValueError("El nombre no puede estar vacío")
         return v
@@ -83,10 +90,11 @@ class ContactForm(BaseModel):
 # Dependency para extraer y validar los datos del formulario
 def as_contact_form(
     name: str = Form(...),
+    name_company: str = Form(...),
     email: str = Form(...),
     message: str = Form(...)
 ):
-    return ContactForm(name=name, email=email, message=message)
+    return ContactForm(name=name, name_company=name_company, email=email, message=message)
 
 # ==========================================================
 # ENDPOINTS
@@ -246,6 +254,7 @@ def send_notification_email(contact: Contact):
     Se ha recibido un nuevo mensaje de contacto:
 
     Nombre: {contact.name}
+    Nombre_Empresa: {contact.name_company}
     Email: {contact.email}
     Mensaje: {contact.message}
     """)
@@ -327,11 +336,12 @@ def read_root():
 async def create_contact(
     background_tasks: BackgroundTasks,
     name: str = Form(...),
+    name_company: str = Form(...),
     email: str = Form(...),
     message: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    new_contact = Contact(name=name, email=email, message=message)
+    new_contact = Contact(name=name, name_company=name_company, email=email, message=message)
     db.add(new_contact)
     db.commit()
     db.refresh(new_contact)
