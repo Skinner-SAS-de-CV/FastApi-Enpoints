@@ -14,6 +14,8 @@ import smtplib
 from email.message import EmailMessage
 from pydantic import BaseModel, EmailStr, field_validator
 import bleach
+from openai import AsyncOpenAI
+import asyncio
 
 
 # Cargar variables de entorno
@@ -25,7 +27,7 @@ if not OPENAI_API_KEY:
     raise ValueError("ERROR: La API Key de OpenAI no se encontró.")
 
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", 'https://api.openai.com/v1')
-client = OpenAI(base_url = OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
+async_client = AsyncOpenAI(base_url = OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
 
 print("API Key cargada en el backend:", os.getenv("OPENAI_API_KEY"))
 
@@ -192,7 +194,7 @@ def match_resume_to_job(resume_text: str, funciones_del_trabajo: str) -> float:
     return round(score, 2)
 
 # Generar un feedback detallado usando GPT-4o-mini
-def generate_gpt_feedback(resume_text: str, nombre_del_cliente: str, funciones_del_trabajo: str, perfil_del_trabajador: str) -> str:
+async def generate_gpt_feedback_async(resume_text: str, nombre_del_cliente: str, funciones_del_trabajo: str, perfil_del_trabajador: str) -> str:
 
     prompt = f"""
     Un cliente llamado **{nombre_del_cliente}** está buscando contratar a un candidato para un puesto específico. 
@@ -228,7 +230,7 @@ def generate_gpt_feedback(resume_text: str, nombre_del_cliente: str, funciones_d
     - **Recomendación final:**
     """
 
-    response = client.chat.completions.create(
+    response = await async_client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "system", "content": "Eres un experto en selección de talento humano."},
                   {"role": "user", "content": prompt}]
@@ -297,10 +299,14 @@ async def analyze_resume(
     # Extraer texto del CV
     resume_text = extract_text(file)
 
-   
-    feedback = generate_gpt_feedback(resume_text, client.name, funciones_del_trabajo, perfil_del_trabajador)
+    # lanzo la tarea asíncrona con feedback_task = asyncio.create_task(...).
+    # y mientras tanto, calculo el match_score.
+    feedback_task = asyncio.create_task(generate_gpt_feedback_async(resume_text, client.name, funciones_del_trabajo, perfil_del_trabajador))
 
     match_score = match_resume_to_job(resume_text, funciones_del_trabajo)
+    
+    #Antes de crear la respuesta, usó (feedback = await feedback_task) para esperar y obtener el resultado del feedback.
+    feedback = await feedback_task
     
     # Ajuste en la decisión basado en el match_score
     if match_score >= 0.6:
