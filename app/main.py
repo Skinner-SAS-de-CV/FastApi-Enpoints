@@ -203,7 +203,6 @@ async def match_resume_to_job_async(resume_text: str, funciones_del_trabajo: str
     return await loop.run_in_executor(executor, match_resume_to_job_sync, resume_text, funciones_del_trabajo)
 
 # Generar un feedback detallado usando GPT-4o-mini
-@app.post("/feedback/")
 async def generate_gpt_feedback_async(analysis_id: str = Form(...), resume_text: str = Form(...), nombre_del_cliente: str = (Form(...)), funciones_del_trabajo: str = Form(...), perfil_del_trabajador: str = Form(...)) -> str:
 
     prompt = f"""
@@ -312,15 +311,19 @@ async def analyze_resume(
     # Extraer texto del CV
     resume_text = extract_text(file)
 
-    # lanzo la tarea asíncrona con feedback_task = asyncio.create_task(...).
-    # y mientras tanto, calculo el match_score.
-    feedback_task = asyncio.create_task(generate_gpt_feedback_async(resume_text, client.name, funciones_del_trabajo, perfil_del_trabajador))
+    # lanzo la tareas asíncrona con TaskGroup
+    # para calcular match_score y generar el feedback de chatGPT
 
-    match_score = await match_resume_to_job_async(resume_text, funciones_del_trabajo)
-    
-    #Antes de crear la respuesta, usó (feedback = await feedback_task) para esperar y obtener el resultado del feedback.
-    feedback = await feedback_task
-    
+    async with asyncio.TaskGroup() as tg:
+        task1 = tg.create_task(
+            generate_gpt_feedback_async(resume_text, client.name, funciones_del_trabajo, perfil_del_trabajador))
+        task2 = tg.create_task(
+            match_resume_to_job_async(resume_text, funciones_del_trabajo))
+
+    # asignar los resultados de las funciones
+    feedback =  task1.result()
+    match_score = task2.result()
+
     # Ajuste en la decisión basado en el match_score
     if match_score >= 0.6:
         
