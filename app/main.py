@@ -3,7 +3,7 @@ import uvicorn
 import PyPDF2
 import docx2txt
 import re
-from fastapi import FastAPI, UploadFile, File, Form, Depends, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, Form, Depends, BackgroundTasks, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
@@ -21,6 +21,7 @@ import uuid
 
 # segun lo que lei y con chatgpt hacemos un executor para manejar las tareas asincronas globales.
 executor = ThreadPoolExecutor()
+from auth import is_signed_in
 
 
 # Cargar variables de entorno
@@ -48,6 +49,10 @@ def get_db():
 
 
 FRONTEND_URL = os.getenv("FRONTEND_URL") 
+
+async def check_signed_in(request: Request):
+    if not is_signed_in(request):
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
 origins = ["http://localhost:3000", FRONTEND_URL]
 
@@ -286,7 +291,7 @@ def send_notification_email(contact: Contact):
 # Analizar un CV y obtener políticas del cliente
 # ==========================================================
 
-@app.post("/analyze/")
+@app.post("/analyze/", dependencies=[Depends(check_signed_in)])
 async def analyze_resume(
     file: UploadFile = File(...),
     job_id: int = Form(...),
