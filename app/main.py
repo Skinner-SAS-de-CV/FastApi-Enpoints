@@ -16,6 +16,11 @@ from pydantic import BaseModel, EmailStr, field_validator
 import bleach
 from openai import AsyncOpenAI
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
+import uuid
+
+# segun lo que lei y con chatgpt hacemos un executor para manejar las tareas asincronas globales.
+executor = ThreadPoolExecutor()
 
 
 # Cargar variables de entorno
@@ -187,14 +192,18 @@ def extract_experience(text: str) -> list:
     experience = re.findall(r"(\d+)\s*(?:años|years)", text)
     return experience if experience else []
 
-# Función para calcular la similitud semántica entre el CV y la descripción del trabajo
-def match_resume_to_job(resume_text: str, funciones_del_trabajo: str) -> float:
+# Función para calcular la similitud semántica entre el CV y la descripción del trabajo y el ThreadPoolExecutor
+def match_resume_to_job_sync(resume_text: str, funciones_del_trabajo: str) -> float:
     embeddings = model.encode([resume_text, funciones_del_trabajo], convert_to_tensor=True)
     score = util.pytorch_cos_sim(embeddings[0], embeddings[1]).item()
     return round(score, 2)
 
+async def match_resume_to_job_async(resume_text: str, funciones_del_trabajo: str) -> float:
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(executor, match_resume_to_job_sync, resume_text, funciones_del_trabajo)
+
 # Generar un feedback detallado usando GPT-4o-mini
-async def generate_gpt_feedback_async(resume_text: str, nombre_del_cliente: str, funciones_del_trabajo: str, perfil_del_trabajador: str) -> str:
+async def generate_gpt_feedback_async(analysis_id: str = Form(...), resume_text: str = Form(...), nombre_del_cliente: str = (Form(...)), funciones_del_trabajo: str = Form(...), perfil_del_trabajador: str = Form(...)) -> str:
 
     prompt = f"""
     Un cliente llamado **{nombre_del_cliente}** está buscando contratar a un candidato para un puesto específico. 
@@ -235,7 +244,10 @@ async def generate_gpt_feedback_async(resume_text: str, nombre_del_cliente: str,
         messages=[{"role": "system", "content": "Eres un experto en selección de talento humano."},
                   {"role": "user", "content": prompt}]
     )
-    return response.choices[0].message.content
+    
+    feedback_text = response.choices[0].message.content
+     
+    return{"analysis_id": analysis_id, "feedback": feedback_text}
 
 # ==========================================================
 # Funcion para enviar un correo electrónico y notificación etc...
@@ -299,15 +311,19 @@ async def analyze_resume(
     # Extraer texto del CV
     resume_text = extract_text(file)
 
-    # lanzo la tarea asíncrona con feedback_task = asyncio.create_task(...).
-    # y mientras tanto, calculo el match_score.
-    feedback_task = asyncio.create_task(generate_gpt_feedback_async(resume_text, client.name, funciones_del_trabajo, perfil_del_trabajador))
+    # lanzo la tareas asíncrona con TaskGroup
+    # para calcular match_score y generar el feedback de chatGPT
 
-    match_score = match_resume_to_job(resume_text, funciones_del_trabajo)
-    
-    #Antes de crear la respuesta, usó (feedback = await feedback_task) para esperar y obtener el resultado del feedback.
-    feedback = await feedback_task
-    
+    async with asyncio.TaskGroup() as tg:
+        task1 = tg.create_task(
+            generate_gpt_feedback_async(resume_text, client.name, funciones_del_trabajo, perfil_del_trabajador))
+        task2 = tg.create_task(
+            match_resume_to_job_async(resume_text, funciones_del_trabajo))
+
+    # asignar los resultados de las funciones
+    feedback =  task1.result()
+    match_score = task2.result()
+
     # Ajuste en la decisión basado en el match_score
     if match_score >= 0.6:
         
@@ -319,8 +335,10 @@ async def analyze_resume(
     else:
         decision = "Puntaje Bajo"
 
+    analysis_id = str(uuid.uuid4())
+
     return {
-        
+        "analysis_id": analysis_id,
         "file_name": file.filename,
         "job_title": job.title,
         "match_score": match_score,
