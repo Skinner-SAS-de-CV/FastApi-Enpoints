@@ -3,7 +3,7 @@ import uvicorn
 import PyPDF2
 import docx2txt
 import re
-from fastapi import FastAPI, UploadFile, File, Form, Depends, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, Form, Depends, BackgroundTasks, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
@@ -18,20 +18,20 @@ from openai import AsyncOpenAI
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import uuid
+from config import ORIGINS, OPENAI_API_KEY, OPENAI_BASE_URL
 
 # segun lo que lei y con chatgpt hacemos un executor para manejar las tareas asincronas globales.
 executor = ThreadPoolExecutor()
+from auth import is_signed_in
 
 
 # Cargar variables de entorno
 load_dotenv(override=True)
 
 # Verificar que la API Key de OpenAI está configurada
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise ValueError("ERROR: La API Key de OpenAI no se encontró.")
 
-OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", 'https://api.openai.com/v1')
 async_client = AsyncOpenAI(base_url = OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
 
 print("API Key cargada en el backend:", os.getenv("OPENAI_API_KEY"))
@@ -47,13 +47,13 @@ def get_db():
         db.close()
 
 
-FRONTEND_URL = os.getenv("FRONTEND_URL") 
-
-origins = ["http://localhost:3000", FRONTEND_URL]
+async def check_signed_in(request: Request):
+    if not is_signed_in(request):
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],  
     allow_headers=["*"], 
@@ -108,7 +108,7 @@ def as_contact_form(
 # ==========================================================
 
 #Endpoint para **añadir trabajos y habilidades**
-@app.post("/agregar_trabajo/")
+@app.post("/agregar_trabajo/", dependencies=[Depends(check_signed_in)])
 async def agregar_trabajo(
     nombre_del_cliente: str = Form(...),
     titulo_de_trabajo: str = Form(...),
@@ -286,7 +286,7 @@ def send_notification_email(contact: Contact):
 # Analizar un CV y obtener políticas del cliente
 # ==========================================================
 
-@app.post("/analyze/")
+@app.post("/analyze/", dependencies=[Depends(check_signed_in)])
 async def analyze_resume(
     file: UploadFile = File(...),
     job_id: int = Form(...),
