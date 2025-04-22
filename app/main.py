@@ -239,9 +239,9 @@ async def generate_gpt_feedback_async(analysis_id: str = Form(...), resume_text:
     - **Recomendación final:**
     """
 
-    response = await async_client.chat.completions.create(
+    response = await async_client.client.responses.create(
         model="gpt-4o-mini",
-        messages=[{"role": "system", "content": "Eres un experto en selección de talento humano."},
+        input=[{"role": "system", "content": "Eres un experto en selección de talento humano."},
                   {"role": "user", "content": prompt}]
     )
     
