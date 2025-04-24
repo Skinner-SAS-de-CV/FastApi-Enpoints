@@ -245,7 +245,7 @@ async def generate_gpt_feedback_async(analysis_id: str = Form(...), resume_text:
                   {"role": "user", "content": prompt}]
     )
     
-    feedback_text = response.choices[0].message.content
+    feedback_text = response.output_text
      
     return{"analysis_id": analysis_id, "feedback": feedback_text}
 
