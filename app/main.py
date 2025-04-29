@@ -10,8 +10,6 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 from database import Function, Profile, SessionLocal, Client, Job, Skill, Contact
-import smtplib
-from email.message import EmailMessage
 from pydantic import BaseModel, EmailStr, field_validator
 import bleach
 from openai import AsyncOpenAI
@@ -19,14 +17,25 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import uuid
 from config import ORIGINS, OPENAI_API_KEY, OPENAI_BASE_URL
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+import base64
+from email.mime.text import MIMEText
 
 # segun lo que lei y con chatgpt hacemos un executor para manejar las tareas asincronas globales.
 executor = ThreadPoolExecutor()
 from auth import is_signed_in
 
+# Definiendo los alcances requeridos
+ALCANCES = ['https://www.googleapis.com/auth/gmail.send']
+
 
 # Cargar variables de entorno
 load_dotenv(override=True)
+
+# Obtener la dirección de correo electrónico desde las variables de entorno
+EMAIL_ADDRESS = os.getenv('EMAIL_ADDRESS')
 
 # Verificar que la API Key de OpenAI está configurada
 if not OPENAI_API_KEY:
@@ -250,37 +259,50 @@ async def generate_gpt_feedback_async(analysis_id: str = Form(...), resume_text:
     return{"analysis_id": analysis_id, "feedback": feedback_text}
 
 # ==========================================================
-# Funcion para enviar un correo electrónico y notificación etc...
+# Funcion para enviar un correo electrónico y notificación usando la API de Gmail.
+# el archivo token.json(Credenciales del usuario). Almacena el access_token y, opcionalmente, el refresh_token obtenidos
+# después de que el usuario autoriza a la aplicación.Se genera automáticamente por la aplicación después de 
+# completar el flujo de autorización con credentials.json.
 # ==========================================================
+def get_gmail_servicios():
+    credenciales = None
+    if os.path.exists('token.json'):
+        credenciales = Credentials.from_authorized_user_file('token.json', ALCANCES)
+    if not credenciales or not credenciales.valid:
+        if credenciales and credenciales.expired and credenciales.refresh_token:
+            credenciales.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', ALCANCES)
+            credenciales = flow.run_local_server(port=0)
+        with open('token.json', 'w') as token:
+            token.write(credenciales.to_json())
+    service = build('gmail', 'v1', credentials=credenciales)
+    return service
 
-def send_notification_email(contact: Contact):
-    EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
-    EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
-    if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
-        print("No se configuró EMAIL_ADDRESS o EMAIL_PASSWORD asi que hazlo")
-        return
 
-    msg = EmailMessage()
-    msg['Subject'] = "Nuevo contacto recibido"
-    msg['From'] = EMAIL_ADDRESS
-    msg['To'] = EMAIL_ADDRESS  
-    msg.set_content(f"""
+def send_notification_email(contact):
+    service = get_gmail_servicios()
+    message_text = f"""
     Se ha recibido un nuevo mensaje de contacto:
 
     Nombre: {contact.name}
     Nombre_Empresa: {contact.name_company}
     Email: {contact.email}
     Mensaje: {contact.message}
-    """)
+    """
+    message = MIMEText(message_text)
+    message['to'] = EMAIL_ADDRESS
+    message['from'] = EMAIL_ADDRESS
+    message['subject'] = 'Nuevo contacto recibido'
+
+    raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
+    body = {'raw': raw_message}
 
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-            smtp.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            smtp.send_message(msg)
-        print("Email enviado correctamente.")
-    except Exception as e:
-        print(f"Error al enviar email: {e}")
-
+        message = service.users().messages().send(userId='me', body=body).execute()
+        print(f'Mensaje enviado: {message["id"]}')
+    except Exception as error:
+        print(f'Ocurrió un error: {error}')
 
 # ==========================================================
 # Analizar un CV y obtener políticas del cliente
