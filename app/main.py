@@ -9,7 +9,7 @@ from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from database import Function, Profile, SessionLocal, Client, Job, Skill, Contact
+from database import Analize, Function, Profile, SessionLocal, Client, Job, Skill, Contact
 import smtplib
 from email.message import EmailMessage
 from pydantic import BaseModel, EmailStr, field_validator
@@ -104,10 +104,9 @@ def as_contact_form(
     return ContactForm(name=name, name_company=name_company, email=email, message=message)
 
 # ==========================================================
-# ENDPOINTS
+# ENDPOINTS para **añadir trabajos y habilidades**
 # ==========================================================
 
-#Endpoint para **añadir trabajos y habilidades**
 @app.post("/agregar_trabajo/", dependencies=[Depends(check_signed_in)])
 async def agregar_trabajo(
     nombre_del_cliente: str = Form(...),
@@ -158,7 +157,7 @@ async def agregar_trabajo(
 
 # Endpoint para obtener clientes
 @app.get("/clients/")
-async def get_clients(db: Session = Depends(get_db)):
+def get_clients(db: Session = Depends(get_db)):
     client_names = db.query(Client).all()
     return [{"name": c.name, "id": c.id} for c in client_names]
 
@@ -171,6 +170,8 @@ async def obtener_trabajos_por_cliente(id: int, db: Session = Depends(get_db)):
 
     jobs = db.query(Job).filter(Job.client_id == client.id).all()
     return [{"id": job.id, "title": job.title} for job in jobs]
+
+
 
 
 # ==========================================================
@@ -377,8 +378,28 @@ async def create_contact(
         "message": "Tu mensaje ha sido recibido. ¡Pronto nos pondremos en contacto!",
         "contact": {"id": new_contact.id, "name": new_contact.name}
     }
-    
-    
+# ==========================================================
+# Aqui esta el endpoint que guarda el analisis de Skinner.
+# ==========================================================
+@app.get("/obtener_analisis/{analysis_id}")
+async def obtener_analisis(analysis_id: str, db: Session = Depends(get_db)):
+    """
+    Endpoint para obtener el análisis generado por OpenAI basado en el analysis_id.
+    """
+    # Buscar el análisis en la base de datos (si está almacenado)
+    analysis = db.query(Analize).filter(Analize.id == analysis_id).one_or_none()
+    if not analysis:
+        return {"error": "Análisis no encontrado"}
+
+    return {
+        "analysis_id": analysis.id,
+        "feedback": analysis.feedback,
+        "match_score": analysis.match_score,
+        "decision": analysis.decision,
+        "file_name": analysis.file_name,
+        "job_title": analysis.job_title,
+    }
+
 # Configuración para producción
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000)) 
