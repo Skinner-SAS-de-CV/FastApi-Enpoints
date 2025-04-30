@@ -41,6 +41,7 @@ class Job(Base):
     skills = relationship("Skill", back_populates="job", cascade="all, delete")
     functions = relationship("Function", back_populates="job", cascade="all, delete")
     profile = relationship("Profile", back_populates="job", cascade="all, delete")
+    candidates = relationship("Candidate", back_populates="job", cascade="all, delete")
 
 #Modelo Funciones del Trabajo
 class Function(Base):
@@ -73,11 +74,26 @@ class Skill(Base):
 class Analize(Base):
     __tablename__ = "analisis"
     id = Column(Integer, primary_key=True, index=True)
-    feedback = Column(String)
+    feedback = Column(Text, index=True, nullable=False)
     match_score = Column(Float)
     decision = Column(String)
     file_name = Column(String)
     job_title = Column(String)
+    candidate_id = Column(Integer, ForeignKey("candidatos.id", ondelete="CASCADE"), nullable=False)
+    
+    # Relación con la tabla de candidatos
+    candidate = relationship("Candidate", back_populates="analyses")
+    
+
+# tabla del  candidato
+class Candidate(Base):
+    __tablename__ = "candidatos"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    job_id = Column(Integer, ForeignKey("tipos_de_trabajo.id", ondelete="CASCADE"), nullable=False)
+    
+    # Se relaciona con el trabajo.
+    job = relationship("Job", back_populates="candidates")
     
     
 # contactos

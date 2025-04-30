@@ -9,7 +9,7 @@ from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from database import Analize, Function, Profile, SessionLocal, Client, Job, Skill, Contact
+from database import Analize, Candidate, Function, Profile, SessionLocal, Client, Job, Skill, Contact
 import smtplib
 from email.message import EmailMessage
 from pydantic import BaseModel, EmailStr, field_validator
@@ -173,7 +173,6 @@ async def obtener_trabajos_por_cliente(id: int, db: Session = Depends(get_db)):
 
 
 
-
 # ==========================================================
 # Funciones para analizar el CV y generar feedback
 # ==========================================================
@@ -292,6 +291,7 @@ async def analyze_resume(
     file: UploadFile = File(...),
     job_id: int = Form(...),
     client_id: int = Form(...),
+    nombre_del_candidato: str = Form(...),
     db: Session = Depends(get_db)
 ):
     # Obtener el cliente
@@ -309,6 +309,12 @@ async def analyze_resume(
     # Obtener perfil del trabajador
     perfil_del_trabajador = ", ".join([p.name for p in db.query(Profile).filter(Profile.job_id == job.id).all()])
 
+    # Guardar el candidato en la base de datos
+    candidate = Candidate(name=nombre_del_candidato, job_id=job.id)
+    db.add(candidate)
+    db.commit()
+    db.refresh(candidate)
+    
     # Extraer texto del CV
     resume_text = extract_text(file)
 
@@ -336,7 +342,20 @@ async def analyze_resume(
     else:
         decision = "Puntaje Bajo"
 
+    
+# Guardar el análisis en la base de datos
     analysis_id = str(uuid.uuid4())
+    new_analysis = Analize(
+        id=analysis_id,
+        feedback=feedback,
+        match_score=match_score,
+        decision=decision,
+        file_name=file.filename,
+        job_title=job.title,
+        candidate_id=candidate.id,
+    )
+    db.add(new_analysis)
+    db.commit()
 
     return {
         "analysis_id": analysis_id,
