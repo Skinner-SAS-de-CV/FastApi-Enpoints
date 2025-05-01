@@ -17,7 +17,6 @@ import bleach
 from openai import AsyncOpenAI
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-import uuid
 from config import ORIGINS, OPENAI_API_KEY, OPENAI_BASE_URL
 
 # segun lo que lei y con chatgpt hacemos un executor para manejar las tareas asincronas globales.
@@ -34,7 +33,7 @@ if not OPENAI_API_KEY:
 
 async_client = AsyncOpenAI(base_url = OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
 
-print("API Key cargada en el backend:", os.getenv("OPENAI_API_KEY"))
+print("API Key cargada en el backend:", OPENAI_API_KEY)
 
 app = FastAPI()
 
@@ -203,7 +202,7 @@ async def match_resume_to_job_async(resume_text: str, funciones_del_trabajo: str
     return await loop.run_in_executor(executor, match_resume_to_job_sync, resume_text, funciones_del_trabajo)
 
 # Generar un feedback detallado usando GPT-4o-mini
-async def generate_gpt_feedback_async(analysis_id: str = Form(...), resume_text: str = Form(...), nombre_del_cliente: str = (Form(...)), funciones_del_trabajo: str = Form(...), perfil_del_trabajador: str = Form(...)) -> str:
+async def generate_gpt_feedback_async(resume_text: str = Form(...), nombre_del_cliente: str = (Form(...)), funciones_del_trabajo: str = Form(...), perfil_del_trabajador: str = Form(...)) -> str:
 
     prompt = f"""
     Un cliente llamado **{nombre_del_cliente}** está buscando contratar a un candidato para un puesto específico. 
@@ -247,7 +246,7 @@ async def generate_gpt_feedback_async(analysis_id: str = Form(...), resume_text:
     
     feedback_text = response.output_text
      
-    return{"analysis_id": analysis_id, "feedback": feedback_text}
+    return{"feedback": feedback_text}
 
 # ==========================================================
 # Funcion para enviar un correo electrónico y notificación etc...
