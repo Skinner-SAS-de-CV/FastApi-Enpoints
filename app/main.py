@@ -338,12 +338,10 @@ async def analyze_resume(
     else:
         decision = "Puntaje Bajo"
 
-    
+    print (feedback)
 # Guardar el análisis en la base de datos
-    analysis_id = str(uuid.uuid4())
     new_analysis = Analize(
-        id=analysis_id,
-        feedback=feedback,
+        feedback=feedback["feedback"],
         match_score=match_score,
         decision=decision,
         file_name=file.filename,
@@ -354,7 +352,7 @@ async def analyze_resume(
     db.commit()
 
     return {
-        "analysis_id": analysis_id,
+        "analysis_id": new_analysis.id,
         "file_name": file.filename,
         "job_title": job.title,
         "match_score": match_score,
