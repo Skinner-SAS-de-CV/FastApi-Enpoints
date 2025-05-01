@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, Text, DateTime
+from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, Text, DateTime, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
@@ -68,6 +68,29 @@ class Skill(Base):
     job_id = Column(Integer, ForeignKey("tipos_de_trabajo.id", ondelete="CASCADE"), nullable=False)
 
     job = relationship("Job", back_populates="skills")
+    
+#Analisis
+class Analize(Base):
+    __tablename__ = "analisis"
+    id = Column(Integer, primary_key=True, index=True)
+    feedback = Column(Text, index=True, nullable=False)
+    match_score = Column(Float)
+    decision = Column(String)
+    file_name = Column(String)
+    job_title = Column(String)
+    name = Column(String)
+    
+    
+
+# # tabla del  candidato
+# class Candidate(Base):
+#     __tablename__ = "candidatos"
+#     id = Column(Integer, primary_key=True, index=True)
+#     name = Column(String, nullable=False)
+#     job_id = Column(Integer, ForeignKey("tipos_de_trabajo.id", ondelete="CASCADE"), nullable=False)
+    
+#     # Se relaciona con el trabajo.
+#     job = relationship("Job", back_populates="candidates")
     
     
 # contactos

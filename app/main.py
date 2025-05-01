@@ -9,7 +9,7 @@ from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from database import Function, Profile, SessionLocal, Client, Job, Skill, Contact
+from database import Analize, Function, Profile, SessionLocal, Client, Job, Skill, Contact
 import smtplib
 from email.message import EmailMessage
 from pydantic import BaseModel, EmailStr, field_validator
@@ -17,7 +17,6 @@ import bleach
 from openai import AsyncOpenAI
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-import uuid
 from config import ORIGINS, OPENAI_API_KEY, OPENAI_BASE_URL
 
 # segun lo que lei y con chatgpt hacemos un executor para manejar las tareas asincronas globales.
@@ -34,7 +33,7 @@ if not OPENAI_API_KEY:
 
 async_client = AsyncOpenAI(base_url = OPENAI_BASE_URL, api_key=OPENAI_API_KEY)
 
-print("API Key cargada en el backend:", os.getenv("OPENAI_API_KEY"))
+print("API Key cargada en el backend:", OPENAI_API_KEY)
 
 app = FastAPI()
 
@@ -104,10 +103,9 @@ def as_contact_form(
     return ContactForm(name=name, name_company=name_company, email=email, message=message)
 
 # ==========================================================
-# ENDPOINTS
+# ENDPOINTS para **añadir trabajos y habilidades**
 # ==========================================================
 
-#Endpoint para **añadir trabajos y habilidades**
 @app.post("/agregar_trabajo/", dependencies=[Depends(check_signed_in)])
 async def agregar_trabajo(
     nombre_del_cliente: str = Form(...),
@@ -158,7 +156,7 @@ async def agregar_trabajo(
 
 # Endpoint para obtener clientes
 @app.get("/clients/")
-async def get_clients(db: Session = Depends(get_db)):
+def get_clients(db: Session = Depends(get_db)):
     client_names = db.query(Client).all()
     return [{"name": c.name, "id": c.id} for c in client_names]
 
@@ -171,6 +169,7 @@ async def obtener_trabajos_por_cliente(id: int, db: Session = Depends(get_db)):
 
     jobs = db.query(Job).filter(Job.client_id == client.id).all()
     return [{"id": job.id, "title": job.title} for job in jobs]
+
 
 
 # ==========================================================
@@ -203,7 +202,7 @@ async def match_resume_to_job_async(resume_text: str, funciones_del_trabajo: str
     return await loop.run_in_executor(executor, match_resume_to_job_sync, resume_text, funciones_del_trabajo)
 
 # Generar un feedback detallado usando GPT-4o-mini
-async def generate_gpt_feedback_async(analysis_id: str = Form(...), resume_text: str = Form(...), nombre_del_cliente: str = (Form(...)), funciones_del_trabajo: str = Form(...), perfil_del_trabajador: str = Form(...)) -> str:
+async def generate_gpt_feedback_async(resume_text: str = Form(...), nombre_del_cliente: str = (Form(...)), funciones_del_trabajo: str = Form(...), perfil_del_trabajador: str = Form(...)) -> str:
 
     prompt = f"""
     Un cliente llamado **{nombre_del_cliente}** está buscando contratar a un candidato para un puesto específico. 
@@ -247,7 +246,7 @@ async def generate_gpt_feedback_async(analysis_id: str = Form(...), resume_text:
     
     feedback_text = response.output_text
      
-    return{"analysis_id": analysis_id, "feedback": feedback_text}
+    return{"feedback": feedback_text}
 
 # ==========================================================
 # Funcion para enviar un correo electrónico y notificación etc...
@@ -291,6 +290,7 @@ async def analyze_resume(
     file: UploadFile = File(...),
     job_id: int = Form(...),
     client_id: int = Form(...),
+    nombre_del_candidato: str = Form(...),
     db: Session = Depends(get_db)
 ):
     # Obtener el cliente
@@ -308,6 +308,8 @@ async def analyze_resume(
     # Obtener perfil del trabajador
     perfil_del_trabajador = ", ".join([p.name for p in db.query(Profile).filter(Profile.job_id == job.id).all()])
 
+    
+    
     # Extraer texto del CV
     resume_text = extract_text(file)
 
@@ -335,13 +337,25 @@ async def analyze_resume(
     else:
         decision = "Puntaje Bajo"
 
-    analysis_id = str(uuid.uuid4())
+    print (feedback)
+# Guardar el análisis en la base de datos
+    new_analysis = Analize(
+        feedback=feedback["feedback"],
+        match_score=match_score,
+        decision=decision,
+        file_name=file.filename,
+        job_title=job.title,
+        name=nombre_del_candidato,
+    )
+    db.add(new_analysis)
+    db.commit()
 
     return {
-        "analysis_id": analysis_id,
+        "analysis_id": new_analysis.id,
         "file_name": file.filename,
         "job_title": job.title,
         "match_score": match_score,
+        "nombre_del_candidato": nombre_del_candidato,
         "decision": decision,
         "feedback": feedback if feedback is not None else "No se pudo generar feedback"
         }
@@ -377,8 +391,29 @@ async def create_contact(
         "message": "Tu mensaje ha sido recibido. ¡Pronto nos pondremos en contacto!",
         "contact": {"id": new_contact.id, "name": new_contact.name}
     }
-    
-    
+# ==========================================================
+# Aqui esta el endpoint que guarda el analisis de Skinner.
+# ==========================================================
+
+# #@app.get("/obtener_analisis/{analysis_id}")
+# async def obtener_analisis(analysis_id: str, db: Session = Depends(get_db)):
+#     """
+#     Endpoint para obtener el análisis generado por OpenAI basado en el analysis_id.
+# """
+#     # Buscar el análisis en la base de datos (si está almacenado)
+#     analysis = db.query(Analize).filter(Analize.id == analysis_id).one_or_none()
+#     if not analysis:
+#         return {"error": "Análisis no encontrado"}
+
+#     return {
+#         "analysis_id": analysis.id,
+#         "feedback": analysis.feedback,
+#         "match_score": analysis.match_score,
+#         "decision": analysis.decision,
+#         "file_name": analysis.file_name,
+#         "job_title": analysis.job_title,
+#     } 
+
 # Configuración para producción
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000)) 
