@@ -41,7 +41,6 @@ class Job(Base):
     skills = relationship("Skill", back_populates="job", cascade="all, delete")
     functions = relationship("Function", back_populates="job", cascade="all, delete")
     profile = relationship("Profile", back_populates="job", cascade="all, delete")
-    candidates = relationship("Candidate", back_populates="job", cascade="all, delete")
 
 #Modelo Funciones del Trabajo
 class Function(Base):
