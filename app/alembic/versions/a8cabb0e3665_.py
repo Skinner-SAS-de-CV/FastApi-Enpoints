@@ -1,8 +1,8 @@
-"""Unificar ramas de migraciones
+"""empty message
 
-Revision ID: a20b8281181a
-Revises: 2eacad8ecbae, da5ea9eaeadb
-Create Date: 2025-04-30 23:00:28.855953
+Revision ID: a8cabb0e3665
+Revises: 2eacad8ecbae, c024499cd841
+Create Date: 2025-05-01 02:18:23.883330
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'a20b8281181a'
-down_revision: Union[str, None] = ('2eacad8ecbae', 'da5ea9eaeadb')
+revision: str = 'a8cabb0e3665'
+down_revision: Union[str, None] = ('2eacad8ecbae', 'c024499cd841')
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

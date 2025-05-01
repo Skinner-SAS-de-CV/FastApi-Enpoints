@@ -79,21 +79,19 @@ class Analize(Base):
     decision = Column(String)
     file_name = Column(String)
     job_title = Column(String)
-    candidate_id = Column(Integer, ForeignKey("candidatos.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String)
     
-    # Relación con la tabla de candidatos
-    candidate = relationship("Candidate", back_populates="analyses")
     
 
-# tabla del  candidato
-class Candidate(Base):
-    __tablename__ = "candidatos"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
-    job_id = Column(Integer, ForeignKey("tipos_de_trabajo.id", ondelete="CASCADE"), nullable=False)
+# # tabla del  candidato
+# class Candidate(Base):
+#     __tablename__ = "candidatos"
+#     id = Column(Integer, primary_key=True, index=True)
+#     name = Column(String, nullable=False)
+#     job_id = Column(Integer, ForeignKey("tipos_de_trabajo.id", ondelete="CASCADE"), nullable=False)
     
-    # Se relaciona con el trabajo.
-    job = relationship("Job", back_populates="candidates")
+#     # Se relaciona con el trabajo.
+#     job = relationship("Job", back_populates="candidates")
     
     
 # contactos

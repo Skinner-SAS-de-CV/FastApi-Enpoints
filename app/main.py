@@ -9,7 +9,7 @@ from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from database import Analize, Candidate, Function, Profile, SessionLocal, Client, Job, Skill, Contact
+from database import Analize, Function, Profile, SessionLocal, Client, Job, Skill, Contact
 import smtplib
 from email.message import EmailMessage
 from pydantic import BaseModel, EmailStr, field_validator
@@ -309,11 +309,7 @@ async def analyze_resume(
     # Obtener perfil del trabajador
     perfil_del_trabajador = ", ".join([p.name for p in db.query(Profile).filter(Profile.job_id == job.id).all()])
 
-    # Guardar el candidato en la base de datos
-    candidate = Candidate(name=nombre_del_candidato, job_id=job.id)
-    db.add(candidate)
-    db.commit()
-    db.refresh(candidate)
+    
     
     # Extraer texto del CV
     resume_text = extract_text(file)
@@ -352,7 +348,7 @@ async def analyze_resume(
         decision=decision,
         file_name=file.filename,
         job_title=job.title,
-        candidate_id=candidate.id,
+        name=nombre_del_candidato,
     )
     db.add(new_analysis)
     db.commit()
@@ -362,6 +358,7 @@ async def analyze_resume(
         "file_name": file.filename,
         "job_title": job.title,
         "match_score": match_score,
+        "nombre_del_candidato": nombre_del_candidato,
         "decision": decision,
         "feedback": feedback if feedback is not None else "No se pudo generar feedback"
         }
@@ -400,24 +397,25 @@ async def create_contact(
 # ==========================================================
 # Aqui esta el endpoint que guarda el analisis de Skinner.
 # ==========================================================
-@app.get("/obtener_analisis/{analysis_id}")
-async def obtener_analisis(analysis_id: str, db: Session = Depends(get_db)):
-    """
-    Endpoint para obtener el análisis generado por OpenAI basado en el analysis_id.
-    """
-    # Buscar el análisis en la base de datos (si está almacenado)
-    analysis = db.query(Analize).filter(Analize.id == analysis_id).one_or_none()
-    if not analysis:
-        return {"error": "Análisis no encontrado"}
 
-    return {
-        "analysis_id": analysis.id,
-        "feedback": analysis.feedback,
-        "match_score": analysis.match_score,
-        "decision": analysis.decision,
-        "file_name": analysis.file_name,
-        "job_title": analysis.job_title,
-    }
+# #@app.get("/obtener_analisis/{analysis_id}")
+# async def obtener_analisis(analysis_id: str, db: Session = Depends(get_db)):
+#     """
+#     Endpoint para obtener el análisis generado por OpenAI basado en el analysis_id.
+# """
+#     # Buscar el análisis en la base de datos (si está almacenado)
+#     analysis = db.query(Analize).filter(Analize.id == analysis_id).one_or_none()
+#     if not analysis:
+#         return {"error": "Análisis no encontrado"}
+
+#     return {
+#         "analysis_id": analysis.id,
+#         "feedback": analysis.feedback,
+#         "match_score": analysis.match_score,
+#         "decision": analysis.decision,
+#         "file_name": analysis.file_name,
+#         "job_title": analysis.job_title,
+#     } 
 
 # Configuración para producción
 if __name__ == "__main__":
