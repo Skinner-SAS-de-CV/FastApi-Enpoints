@@ -444,7 +444,7 @@ async def feedback_candidato(
         raise HTTPException(status_code=500, detail=f"Error al comunicarse con OpenAI: {e}")
 
     # Retornar el feedback generado
-    return {"feedback": feedback_text}
+    return {"feedback": { "feedback": feedback_text }}
 
 
 
