@@ -1,4 +1,5 @@
 import os
+from pydoc import text
 import uvicorn
 import PyPDF2
 import docx2txt
@@ -392,27 +393,60 @@ async def create_contact(
         "contact": {"id": new_contact.id, "name": new_contact.name}
     }
 # ==========================================================
-# Aqui esta el endpoint que guarda el analisis de Skinner.
+# Aqui esta el endpoint feedback candidatos
 # ==========================================================
 
-# #@app.get("/obtener_analisis/{analysis_id}")
-# async def obtener_analisis(analysis_id: str, db: Session = Depends(get_db)):
-#     """
-#     Endpoint para obtener el análisis generado por OpenAI basado en el analysis_id.
-# """
-#     # Buscar el análisis en la base de datos (si está almacenado)
-#     analysis = db.query(Analize).filter(Analize.id == analysis_id).one_or_none()
-#     if not analysis:
-#         return {"error": "Análisis no encontrado"}
+@app.post("/feedbackCandidate")
+async def feedback_candidato(
+    file: UploadFile = File(...),
+):
+    # Validar tipo de archivo
+    if not (file.filename.endswith(".pdf") or file.filename.endswith(".docx")):
+        raise HTTPException(status_code=400, detail="Solo se aceptan archivos PDF o DOCX.")
 
-#     return {
-#         "analysis_id": analysis.id,
-#         "feedback": analysis.feedback,
-#         "match_score": analysis.match_score,
-#         "decision": analysis.decision,
-#         "file_name": analysis.file_name,
-#         "job_title": analysis.job_title,
-#     } 
+    # Extraer texto del archivo
+    resume_text = extract_text(file)
+
+    # Validar que el texto extraído no esté vacío
+    if not resume_text.strip():
+        raise HTTPException(status_code=400, detail="El archivo no contiene texto válido.")
+
+    # Crear prompt
+    prompt = f"""
+    Eres un asesor experto en recursos humanos y especialista en evaluar currículums. 
+    Por favor, revisa cuidadosamente el siguiente CV y proporciona un análisis equilibrado que incluya:
+    - Las fortalezas y habilidades clave del candidato.
+    - Áreas en las que se podría mejorar el CV.
+    - Áreas donde pudiera desarrollar su carrera.
+    - Sugerencias y recomendaciones para optimizar la presentación del currículum.
+    - Utiliza un tono amable y constructivo, ofreciendo feedback detallado y directo.
+    - Si el CV es fuerte, enfatiza los aspectos positivos y brinda sugerencias para hacerlo aún mejor.
+    - Si el CV es débil, destaca las áreas problemáticas y sugiere formas específicas de mejorar.
+    - Despídete de una forma amable y di que eres "Skinner".
+
+    Currículum:
+    {resume_text}
+
+    Feedback:
+    """
+
+    # Llamar a la API de OpenAI para generar el feedback
+    try:
+        response = await async_client.responses.create(
+            model="gpt-4o-mini",
+            input=[
+                {"role": "system", "content": "Eres un experto en asesorar a las personas para elaborar sus currículums de forma profesional."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        feedback_text = response.output_text
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al comunicarse con OpenAI: {e}")
+
+    # Retornar el feedback generado
+    return {"feedback": feedback_text}
+
+
 
 # Configuración para producción
 if __name__ == "__main__":
