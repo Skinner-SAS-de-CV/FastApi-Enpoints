@@ -82,16 +82,26 @@ class Analize(Base):
     
     
 
-# # tabla del  candidato
-# class Candidate(Base):
-#     __tablename__ = "candidatos"
-#     id = Column(Integer, primary_key=True, index=True)
-#     name = Column(String, nullable=False)
-#     job_id = Column(Integer, ForeignKey("tipos_de_trabajo.id", ondelete="CASCADE"), nullable=False)
+# tabla del  candidato
+class Candidate(Base):
+     __tablename__ = "candidatos"
+     id = Column(Integer, primary_key=True, index=True)
+     name = Column(String, nullable=False)
+     birthday = Column(String, nullable=False)
+     country = Column(String, nullable=False)
+     # este nivel_id es para relacionar cuando seleccionas si sos estudiante, junior, senior o experto
+     # en el servicio...
+     nivel_id = Column(Integer, ForeignKey("nivel_educativo.id", ondelete="CASCADE"), nullable=False)
     
-#     # Se relaciona con el trabajo.
-#     job = relationship("Job", back_populates="candidates")
+#  Se relaciona con el trabajo.
+     nivel = relationship("Nivel", back_populates="candidatos")
     
+    
+# tabla del  nivel de profesion/educacion
+class Nivel(Base):
+    __tablename__ = "nivel_educativo"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
     
 # contactos
 class Contact(Base):

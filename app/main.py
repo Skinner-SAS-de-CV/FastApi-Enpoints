@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from database import Analize, Function, Profile, SessionLocal, Client, Job, Skill, Contact
+from database import Analize, Function, Profile, SessionLocal, Client, Job, Skill, Contact, Candidate, Nivel
 import smtplib
 from email.message import EmailMessage
 from pydantic import BaseModel, EmailStr, field_validator
@@ -445,6 +445,66 @@ async def feedback_candidato(
 
     # Retornar el feedback generado
     return {"feedback": { "feedback": feedback_text }}
+
+# ==========================================================
+# Aqui esta el endpoint de los perfiles
+# ==========================================================
+@app.post("/perfiles/", dependencies=[Depends(check_signed_in)])
+async def crear_perfil(
+    name: str = Form(...),
+    nivel_id: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Crear nuevo perfil asociado a una profesion o nivel de estudio
+    """
+    # Verificar si la profesion existe
+    profesion = db.query(Nivel).filter(Nivel.id == nivel_id).one_or_none()
+    if not profesion:
+        raise HTTPException(status_code=404, detail="Profesion no encontrada")
+
+    # Crear el perfil
+    nuevo_perfil = Candidate(name=name, nivel_id=nivel_id)
+    db.add(nuevo_perfil)
+    db.commit()
+    db.refresh(nuevo_perfil)
+
+    return {"message": "Perfil creado exitosamente", "perfil": {"id": nuevo_perfil.id, "name": nuevo_perfil.name}}
+
+
+@app.put("/perfiles/{perfil_id}", dependencies=[Depends(check_signed_in)])
+async def actualizar_perfil(
+    perfil_id: int,
+    name: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Actualizar un perfil existente.
+    """
+    perfil = db.query(Candidate).filter(Candidate.id == perfil_id).one_or_none()
+    if not perfil:
+        raise HTTPException(status_code=404, detail="Perfil no encontrado")
+
+    perfil.name = name
+    db.commit()
+    db.refresh(perfil)
+
+    return {"message": "Perfil actualizado exitosamente", "perfil": {"id": perfil.id, "name": perfil.name}}
+
+
+@app.delete("/perfiles/{perfil_id}", dependencies=[Depends(check_signed_in)])
+async def eliminar_perfil(perfil_id: int, db: Session = Depends(get_db)):
+    """
+    Eliminar un perfil existente.
+    """
+    perfil = db.query(Candidate).filter(Candidate.id == perfil_id).one_or_none()
+    if not perfil:
+        raise HTTPException(status_code=404, detail="Perfil no encontrado")
+
+    db.delete(perfil)
+    db.commit()
+
+    return {"message": "Perfil eliminado exitosamente"}
 
 
 
