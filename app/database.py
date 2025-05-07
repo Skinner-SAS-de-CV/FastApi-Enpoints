@@ -91,7 +91,7 @@ class Candidate(Base):
      country = Column(String, nullable=False)
      # este nivel_id es para relacionar cuando seleccionas si sos estudiante, junior, senior o experto
      # en el servicio...
-     nivel_id = Column(Integer, ForeignKey("tipos_de_profesiones.id", ondelete="CASCADE"), nullable=False)
+     nivel_id = Column(Integer, ForeignKey("nivel_educativo.id", ondelete="CASCADE"), nullable=False)
     
 #  Se relaciona con el trabajo.
      nivel = relationship("Nivel", back_populates="candidatos")
@@ -99,7 +99,7 @@ class Candidate(Base):
     
 # tabla del  nivel de profesion/educacion
 class Nivel(Base):
-    __tablename__ = "tipos_de_profesiones"
+    __tablename__ = "nivel_educativo"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     
