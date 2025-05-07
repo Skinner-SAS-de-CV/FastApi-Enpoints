@@ -449,16 +449,6 @@ async def feedback_candidato(
 # ==========================================================
 # Aqui esta el endpoint de los perfiles
 # ==========================================================
-
-@app.get("/perfiles/", dependencies=[Depends(check_signed_in)])
-async def listar_perfiles(db: Session = Depends(get_db)):
-    """
-    Listar todos los perfiles/candidatos disponibles en la base de datos.
-    """
-    perfiles = db.query(Candidate).all()
-    return [{"id": perfil.id, "name": perfil.name, "birthday": perfil.birthday, "nivel_id": perfil.nivel_id} for perfil in perfiles]
-
-
 @app.post("/perfiles/", dependencies=[Depends(check_signed_in)])
 async def crear_perfil(
     name: str = Form(...),

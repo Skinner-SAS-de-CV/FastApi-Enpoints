@@ -89,7 +89,8 @@ class Candidate(Base):
      name = Column(String, nullable=False)
      birthday = Column(String, nullable=False)
      country = Column(String, nullable=False)
-     bio = Column(String, nullable=False)
+     # este nivel_id es para relacionar cuando seleccionas si sos estudiante, junior, senior o experto
+     # en el servicio...
      nivel_id = Column(Integer, ForeignKey("tipos_de_profesiones.id", ondelete="CASCADE"), nullable=False)
     
 #  Se relaciona con el trabajo.
@@ -101,8 +102,6 @@ class Nivel(Base):
     __tablename__ = "tipos_de_profesiones"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
-    # Relación inversa con la tabla Candidate
-    candidates = relationship("Candidate", back_populates="Nivel")
     
 # contactos
 class Contact(Base):
