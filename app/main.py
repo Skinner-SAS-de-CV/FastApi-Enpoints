@@ -396,7 +396,7 @@ async def create_contact(
 # Aqui esta el endpoint feedback candidatos
 # ==========================================================
 
-@app.post("/feedbackCandidate")
+@app.post("/feedbackCandidate/")
 async def feedback_candidato(
     file: UploadFile = File(...),
 ):
