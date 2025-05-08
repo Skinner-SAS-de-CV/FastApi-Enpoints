@@ -103,6 +103,8 @@ class Nivel(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     
+    candidatos = relationship("Candidate", back_populates="nivel")
+    
 # contactos
 class Contact(Base):
     __tablename__ = "contactos"
