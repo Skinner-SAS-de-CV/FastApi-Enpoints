@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 from pydoc import text
 import uvicorn
@@ -446,36 +447,48 @@ async def feedback_candidato(
     # Retornar el feedback generado
     return {"feedback": { "feedback": feedback_text }}
 
+@app.get("/nivel/")
+async def niveles(db: Session = Depends(get_db)):
+    niveles = db.query(Nivel).all()
+    return [{"name": c.name, "id": c.id} for c in niveles]
+
 # ==========================================================
 # Aqui esta el endpoint de los perfiles
 # ==========================================================
 @app.post("/perfiles/", dependencies=[Depends(check_signed_in)])
 async def crear_perfil(
-    name: str = Form(...),
+    firstname: str = Form(...),
+    lastname: str = Form(...),
+    birthday: datetime = Form(...),
     nivel_id: str = Form(...),
+    country: str = Form(...),
     db: Session = Depends(get_db)
 ):
     """
     Crear nuevo perfil asociado a una profesion o nivel de estudio
     """
     # Verificar si la profesion existe
-    profesion = db.query(Nivel).filter(Nivel.id == nivel_id).one_or_none()
-    if not profesion:
-        raise HTTPException(status_code=404, detail="Profesion no encontrada")
+    nivel = db.query(Nivel).filter(Nivel.id == nivel_id).one_or_none()
+    if not nivel:
+        raise HTTPException(status_code=404, detail="Nivel no encontrado")
 
     # Crear el perfil
-    nuevo_perfil = Candidate(name=name, nivel_id=nivel_id)
+    nuevo_perfil = Candidate(firstname=firstname, nivel_id=nivel_id, lastname=lastname, birthday=birthday.date(), country=country)
     db.add(nuevo_perfil)
     db.commit()
     db.refresh(nuevo_perfil)
 
-    return {"message": "Perfil creado exitosamente", "perfil": {"id": nuevo_perfil.id, "name": nuevo_perfil.name}}
+    return {"message": "Perfil creado exitosamente", "perfil": {"id": nuevo_perfil.id, "name": nuevo_perfil.firstname}}
 
 
 @app.put("/perfiles/{perfil_id}", dependencies=[Depends(check_signed_in)])
 async def actualizar_perfil(
     perfil_id: int,
-    name: str = Form(...),
+    firstname: str = Form(...),
+    lastname: str = Form(...),
+    birthday: datetime = Form(...),
+    nivel_id: str = Form(...),
+    country: str = Form(...),
     db: Session = Depends(get_db)
 ):
     """
@@ -485,11 +498,16 @@ async def actualizar_perfil(
     if not perfil:
         raise HTTPException(status_code=404, detail="Perfil no encontrado")
 
-    perfil.name = name
+
+    perfil.firstname = firstname
+    perfil.lastname = lastname
+    perfil.birthday = birthday.date()
+    perfil.nivel_id = nivel_id
+    perfil.country = country
     db.commit()
     db.refresh(perfil)
 
-    return {"message": "Perfil actualizado exitosamente", "perfil": {"id": perfil.id, "name": perfil.name}}
+    return {"message": "Perfil actualizado exitosamente", "perfil": {"id": perfil.id, "name": perfil.firstname}}
 
 
 @app.delete("/perfiles/{perfil_id}", dependencies=[Depends(check_signed_in)])
