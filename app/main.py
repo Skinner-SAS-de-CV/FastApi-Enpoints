@@ -399,6 +399,7 @@ async def create_contact(
 @app.post("/feedbackCandidate/")
 async def feedback_candidato(
     file: UploadFile = File(...),
+    profesion: str = Form(...),
 ):
     # Validar tipo de archivo
     if not (file.filename.endswith(".pdf") or file.filename.endswith(".docx")):
@@ -410,7 +411,8 @@ async def feedback_candidato(
     # Validar que el texto extraído no esté vacío
     if not resume_text.strip():
         raise HTTPException(status_code=400, detail="El archivo no contiene texto válido.")
-
+    
+    
     # Crear prompt
     prompt = f"""
     Eres un asesor experto en recursos humanos y especialista en evaluar currículums. 
@@ -419,10 +421,11 @@ async def feedback_candidato(
     - Áreas en las que se podría mejorar el CV.
     - Áreas donde pudiera desarrollar su carrera.
     - Sugerencias y recomendaciones para optimizar la presentación del currículum.
+    - Compara el CV con los requisitos y características de la profesión: {profesion}.
     - Utiliza un tono amable y constructivo, ofreciendo feedback detallado y directo.
     - Si el CV es fuerte, enfatiza los aspectos positivos y brinda sugerencias para hacerlo aún mejor.
     - Si el CV es débil, destaca las áreas problemáticas y sugiere formas específicas de mejorar.
-    - Despídete de una forma amable y di que eres "Skinner".
+    - Si el CV es bueno, pero no excelente, proporciona recomendaciones para llevarlo al siguiente nivel.
 
     Currículum:
     {resume_text}
@@ -444,7 +447,10 @@ async def feedback_candidato(
         raise HTTPException(status_code=500, detail=f"Error al comunicarse con OpenAI: {e}")
 
     # Retornar el feedback generado
-    return {"feedback": { "feedback": feedback_text }}
+    return {
+        "feedback": feedback_text,
+        "profesion": profesion,
+    }
 
 # ==========================================================
 # Aqui esta el endpoint de los perfiles
