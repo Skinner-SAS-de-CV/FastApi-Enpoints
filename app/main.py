@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from database import Analize, Function, Profile, SessionLocal, Client, Job, Skill, Contact, Candidate, Nivel
+from database import Analize, Function, Profile, SessionLocal, Client, Job, Skill, Contact, Candidate, Nivel, Professions
 import smtplib
 from email.message import EmailMessage
 from pydantic import BaseModel, EmailStr, field_validator
@@ -399,6 +399,8 @@ async def create_contact(
 @app.post("/feedbackCandidate/")
 async def feedback_candidato(
     file: UploadFile = File(...),
+    profesion: str = Form(...),
+    db: Session = Depends(get_db)
 ):
     # Validar tipo de archivo
     if not (file.filename.endswith(".pdf") or file.filename.endswith(".docx")):
@@ -410,6 +412,14 @@ async def feedback_candidato(
     # Validar que el texto extraído no esté vacío
     if not resume_text.strip():
         raise HTTPException(status_code=400, detail="El archivo no contiene texto válido.")
+    
+    # Consultar la profesión seleccionada
+    profesion_obj = db.query(Professions).filter(Professions.profesiones.ilike(profesion)).one_or_none()
+    if not profesion_obj:
+        profesion_obj = Professions(profesiones=profesion)
+        db.add(profesion_obj)
+        db.commit()
+        db.refresh(profesion_obj)
 
     # Crear prompt
     prompt = f"""
@@ -419,10 +429,11 @@ async def feedback_candidato(
     - Áreas en las que se podría mejorar el CV.
     - Áreas donde pudiera desarrollar su carrera.
     - Sugerencias y recomendaciones para optimizar la presentación del currículum.
+    - Compara el CV con los requisitos y características de la profesión: {profesion_obj.profesiones}.
     - Utiliza un tono amable y constructivo, ofreciendo feedback detallado y directo.
     - Si el CV es fuerte, enfatiza los aspectos positivos y brinda sugerencias para hacerlo aún mejor.
     - Si el CV es débil, destaca las áreas problemáticas y sugiere formas específicas de mejorar.
-    - Despídete de una forma amable y di que eres "Skinner".
+    - Si el CV es bueno, pero no excelente, proporciona recomendaciones para llevarlo al siguiente nivel.
 
     Currículum:
     {resume_text}
@@ -444,7 +455,10 @@ async def feedback_candidato(
         raise HTTPException(status_code=500, detail=f"Error al comunicarse con OpenAI: {e}")
 
     # Retornar el feedback generado
-    return {"feedback": { "feedback": feedback_text }}
+    return {
+        "feedback": feedback_text,
+        "profesion": profesion_obj.profesiones
+    }
 
 # ==========================================================
 # Aqui esta el endpoint de los perfiles

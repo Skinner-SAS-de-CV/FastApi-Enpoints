@@ -97,13 +97,22 @@ class Candidate(Base):
      nivel = relationship("Nivel", back_populates="candidatos")
     
     
-# tabla del  nivel de profesion/educacion
+# tabla del  nivel de educacion
 class Nivel(Base):
     __tablename__ = "nivel_educativo"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
+    estudiante_universitario = Column(String, nullable=False)
+    recien_graduado = Column(String, nullable=False)
+    egresado = Column(String, nullable=False)
+    
     
     candidatos = relationship("Candidate", back_populates="nivel")
+    
+# tabla del nivel de profesion
+class Professions (Base):
+    __tablename__="profesiones"
+    id = Column(Integer, primary_key=True, index=True) 
+    profesiones = Column(String, nullable=False) 
     
 # contactos
 class Contact(Base):
