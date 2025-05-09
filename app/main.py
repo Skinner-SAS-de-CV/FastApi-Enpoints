@@ -413,14 +413,7 @@ async def feedback_candidato(
     if not resume_text.strip():
         raise HTTPException(status_code=400, detail="El archivo no contiene texto válido.")
     
-    # Consultar la profesión seleccionada
-    profesion_obj = db.query(Professions).filter(Professions.profesiones.ilike(profesion)).one_or_none()
-    if not profesion_obj:
-        profesion_obj = Professions(profesiones=profesion)
-        db.add(profesion_obj)
-        db.commit()
-        db.refresh(profesion_obj)
-
+    
     # Crear prompt
     prompt = f"""
     Eres un asesor experto en recursos humanos y especialista en evaluar currículums. 
@@ -429,7 +422,7 @@ async def feedback_candidato(
     - Áreas en las que se podría mejorar el CV.
     - Áreas donde pudiera desarrollar su carrera.
     - Sugerencias y recomendaciones para optimizar la presentación del currículum.
-    - Compara el CV con los requisitos y características de la profesión: {profesion_obj.profesiones}.
+    - Compara el CV con los requisitos y características de la profesión: {profesion}.
     - Utiliza un tono amable y constructivo, ofreciendo feedback detallado y directo.
     - Si el CV es fuerte, enfatiza los aspectos positivos y brinda sugerencias para hacerlo aún mejor.
     - Si el CV es débil, destaca las áreas problemáticas y sugiere formas específicas de mejorar.
@@ -457,7 +450,7 @@ async def feedback_candidato(
     # Retornar el feedback generado
     return {
         "feedback": feedback_text,
-        "profesion": profesion_obj.profesiones
+        "profesion": profesion,
     }
 
 # ==========================================================
