@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from database import Analize, Function, Profile, SessionLocal, Client, Job, Skill, Contact, Candidate, Nivel, Professions
+from database import Analize, Function, Profile, SessionLocal, Client, Job, Skill, Contact, Candidate, Nivel
 import smtplib
 from email.message import EmailMessage
 from pydantic import BaseModel, EmailStr, field_validator
@@ -400,7 +400,6 @@ async def create_contact(
 async def feedback_candidato(
     file: UploadFile = File(...),
     profesion: str = Form(...),
-    db: Session = Depends(get_db)
 ):
     # Validar tipo de archivo
     if not (file.filename.endswith(".pdf") or file.filename.endswith(".docx")):
