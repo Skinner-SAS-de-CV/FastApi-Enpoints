@@ -13,3 +13,13 @@ def is_signed_in(request: Request):
         )
     )
     return request_state.is_signed_in
+
+def request_state_payload(request: Request):
+    sdk = Clerk(bearer_auth=os.getenv('CLERK_SECRET_KEY'))
+    request_state = sdk.authenticate_request(
+        request,
+        AuthenticateRequestOptions(
+            authorized_parties=ORIGINS
+        )
+    )
+    return request_state.payload

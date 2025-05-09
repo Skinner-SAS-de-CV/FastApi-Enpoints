@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, Text, DateTime, Float
+from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, Text, DateTime, Float, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
@@ -55,7 +55,7 @@ class Function(Base):
 class Profile(Base):
     __tablename__ = "perfil_del_trabajador"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
+    name = Column(Text, nullable=False)
     job_id = Column(Integer, ForeignKey("tipos_de_trabajo.id", ondelete="CASCADE"), nullable=False)
 
     job = relationship("Job", back_populates="profile")
@@ -64,7 +64,7 @@ class Profile(Base):
 class Skill(Base):
     __tablename__ = "habilidades"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, nullable=False)
+    name = Column(Text, nullable=False)
     job_id = Column(Integer, ForeignKey("tipos_de_trabajo.id", ondelete="CASCADE"), nullable=False)
 
     job = relationship("Job", back_populates="skills")
@@ -86,8 +86,9 @@ class Analize(Base):
 class Candidate(Base):
      __tablename__ = "candidatos"
      id = Column(Integer, primary_key=True, index=True)
-     name = Column(String, nullable=False)
-     birthday = Column(String, nullable=False)
+     firstname = Column(String, nullable=False)
+     lastname = Column(String, nullable=False)
+     birthday = Column(Date, nullable=False)
      country = Column(String, nullable=False)
      # este nivel_id es para relacionar cuando seleccionas si sos estudiante, junior, senior o experto
      # en el servicio...
