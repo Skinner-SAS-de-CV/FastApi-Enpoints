@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 from pydoc import text
+from user_util import onboard_user
 import uvicorn
 import PyPDF2
 import docx2txt
@@ -23,7 +24,7 @@ from config import ORIGINS, OPENAI_API_KEY, OPENAI_BASE_URL
 
 # segun lo que lei y con chatgpt hacemos un executor para manejar las tareas asincronas globales.
 executor = ThreadPoolExecutor()
-from auth import is_signed_in
+from auth import is_signed_in, request_state_payload
 
 
 # Cargar variables de entorno
@@ -462,12 +463,13 @@ async def crear_perfil(
     birthday: datetime = Form(...),
     nivel_id: str = Form(...),
     country: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_payload: any = Depends(request_state_payload)
 ):
     """
     Crear nuevo perfil asociado a una profesion o nivel de estudio
     """
-    # Verificar si la profesion existe
+    # Verificar si el nivel existe
     nivel = db.query(Nivel).filter(Nivel.id == nivel_id).one_or_none()
     if not nivel:
         raise HTTPException(status_code=404, detail="Nivel no encontrado")
@@ -477,6 +479,9 @@ async def crear_perfil(
     db.add(nuevo_perfil)
     db.commit()
     db.refresh(nuevo_perfil)
+
+    # Marcar usuario como onboarded
+    onboard_user(user_payload["sub"], str(nuevo_perfil.id))
 
     return {"message": "Perfil creado exitosamente", "perfil": {"id": nuevo_perfil.id, "name": nuevo_perfil.firstname}}
 
@@ -489,7 +494,7 @@ async def actualizar_perfil(
     birthday: datetime = Form(...),
     nivel_id: str = Form(...),
     country: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Actualizar un perfil existente.
@@ -497,7 +502,6 @@ async def actualizar_perfil(
     perfil = db.query(Candidate).filter(Candidate.id == perfil_id).one_or_none()
     if not perfil:
         raise HTTPException(status_code=404, detail="Perfil no encontrado")
-
 
     perfil.firstname = firstname
     perfil.lastname = lastname
