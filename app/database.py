@@ -86,6 +86,8 @@ class Analize(Base):
 class Candidate(Base):
      __tablename__ = "candidatos"
      id = Column(Integer, primary_key=True, index=True)
+    # Id de usuario en clerk
+     external_user_id = Column(String, nullable=False, unique=True)
      firstname = Column(String, nullable=False)
      lastname = Column(String, nullable=False)
      birthday = Column(Date, nullable=False)
