@@ -480,14 +480,15 @@ async def crear_perfil(
     if not nivel:
         raise HTTPException(status_code=404, detail="Nivel no encontrado")
 
+    external_user_id = user_payload["sub"]
     # Crear el perfil
-    nuevo_perfil = Candidate(firstname=firstname, nivel_id=nivel_id, lastname=lastname, birthday=birthday.date(), country=country)
+    nuevo_perfil = Candidate(firstname=firstname, nivel_id=nivel_id, lastname=lastname, birthday=birthday.date(), country=country, external_user_id=external_user_id )
     db.add(nuevo_perfil)
     db.commit()
     db.refresh(nuevo_perfil)
 
     # Marcar usuario como onboarded
-    onboard_user(user_payload["sub"], str(nuevo_perfil.id))
+    onboard_user(external_user_id, str(nuevo_perfil.id))
 
     return {"message": "Perfil creado exitosamente", "perfil": {"id": nuevo_perfil.id, "name": nuevo_perfil.firstname}}
 
