@@ -450,7 +450,9 @@ async def feedback_candidato(
 
     # Retornar el feedback generado
     return {
-        "feedback": feedback_text,
+        "feedback": {
+            "feedback": feedback_text
+        },
         "profesion": profesion,
     }
 
