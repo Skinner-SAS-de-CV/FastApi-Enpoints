@@ -12,7 +12,7 @@ from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
 from dotenv import load_dotenv
 from sqlalchemy.orm import Session
-from database import Analize, Function, Profile, SessionLocal, Client, Job, Skill, Contact, Candidate, Nivel
+from database import Analize, Function, Profile, SessionLocal, Client, Job, Skill, Contact, Candidate, Nivel, Usage
 import smtplib
 from email.message import EmailMessage
 from pydantic import BaseModel, EmailStr, field_validator
@@ -536,6 +536,31 @@ async def eliminar_perfil(perfil_id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {"message": "Perfil eliminado exitosamente"}
+
+# ==========================================================
+# Funciones de los usuarios cuando cada vez realizan una acción de uso.
+# ==========================================================
+# función donde increment_usage se incrementa cada vez que el usuario usa la aplicación.
+def increment_usage(user_id: int, db: Session =Depends(get_db)):
+    usage = db.query(Usage).filter_by(Usage.user_id == user_id).first()
+    if usage.usage_count < usage.usage_limit:
+        usage.usage_count += 1
+        db.session.commit()
+        return True
+    else:
+        return False # si el usuario ha alcanzado su límite de uso, no se incrementa el contador.
+    
+# Bloquear el acceso si el usuario ha alcanzado su límite de uso
+def can_use_app(user_id: int, db: Session = Depends(get_db)):
+    usage = db.query(Usage).filter_by(Usage.user_id == user_id).first()  # Si can_use_app devuelve False significa que el usuario no puede usar mas la app.
+    return usage.usage_count < usage.usage_limit
+
+# Integrar con  el metodo de pago.
+def upgrade_plan(user_id, new_limit: int, db: Session = Depends(get_db)):
+    usage = db.query(Usage).filter_by(Usage.user_id == user_id).first() 
+    usage.usage_limit = new_limit
+    usage.usage_count = 0  # Reiniciar el contador al actualizar el plan
+    db.commit() 
 
 
 
