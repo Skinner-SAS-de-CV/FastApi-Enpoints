@@ -6,7 +6,7 @@ charset-normalizer==3.4.1
 click==8.1.8
 Cython==0.29.36
 docx2txt==0.8
-fastapi==0.115.8
+fastapi[standard]==0.115.8
 filelock==3.17.0
 fsspec==2025.2.0
 h11==0.14.0
