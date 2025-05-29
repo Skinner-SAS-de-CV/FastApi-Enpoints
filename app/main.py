@@ -398,11 +398,19 @@ async def create_contact(
 # Aqui esta el endpoint feedback candidatos
 # ==========================================================
 
-@app.post("/feedbackCandidate/")
+@app.post("/feedbackCandidate/", dependencies=[Depends(check_signed_in)])
 async def feedback_candidato(
     file: UploadFile = File(...),
-    profesion: str = Form(...),
+    profesion: str = Form(...), 
+    user_payload: any = Depends(request_state_payload),
+    db: Session = Depends(get_db)
 ):
+    perfil = db.query(Candidate).filter(Candidate.external_user_id == user_payload["sub"]).one_or_none()
+    if not perfil:
+        raise HTTPException(status_code=404, detail="perfil no encontrado")
+    if not can_use_app (user_id = perfil.id, db=db): 
+        raise HTTPException(status_code=403, detail="Has alcanzado tu límite de uso. Por favor, actualiza tu plan para continuar.")
+    
     # Validar tipo de archivo
     if not (file.filename.endswith(".pdf") or file.filename.endswith(".docx")):
         raise HTTPException(status_code=400, detail="Solo se aceptan archivos PDF o DOCX.")
@@ -445,6 +453,7 @@ async def feedback_candidato(
             ]
         )
         feedback_text = response.output_text
+        increment_usage(user_id = perfil.id, db=db)  # Incrementar el uso de la app
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al comunicarse con OpenAI: {e}")
 
@@ -542,26 +551,25 @@ async def eliminar_perfil(perfil_id: int, db: Session = Depends(get_db)):
 # ==========================================================
 # función donde increment_usage se incrementa cada vez que el usuario usa la aplicación.
 def increment_usage(user_id: int, db: Session =Depends(get_db)):
-    usage = db.query(Usage).filter_by(Usage.user_id == user_id).first()
+    usage = db.query(Usage).filter(Usage.user_id == user_id).first()
     if usage.usage_count < usage.usage_limit:
         usage.usage_count += 1
-        db.session.commit()
+        db.commit()
         return True
     else:
         return False # si el usuario ha alcanzado su límite de uso, no se incrementa el contador.
     
 # Bloquear el acceso si el usuario ha alcanzado su límite de uso
 def can_use_app(user_id: int, db: Session = Depends(get_db)):
-    usage = db.query(Usage).filter_by(Usage.user_id == user_id).first()  # Si can_use_app devuelve False significa que el usuario no puede usar mas la app.
+    usage = db.query(Usage).filter(Usage.user_id == user_id).first()  # Si can_use_app devuelve False significa que el usuario no puede usar mas la app.
     return usage.usage_count < usage.usage_limit
 
 # Integrar con  el metodo de pago.
 def upgrade_plan(user_id, new_limit: int, db: Session = Depends(get_db)):
-    usage = db.query(Usage).filter_by(Usage.user_id == user_id).first() 
-    usage.usage_limit = new_limit
-    usage.usage_count = 0  # Reiniciar el contador al actualizar el plan
+    usage = db.query(Usage).filter(Usage.user_id == user_id).first() 
+    usage.usage_limit = usage.usage_limit + new_limit
     db.commit() 
-
+    return usage.usage_limit
 
 
 # Configuración para producción
