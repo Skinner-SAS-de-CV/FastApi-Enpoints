@@ -547,6 +547,31 @@ async def eliminar_perfil(perfil_id: int, db: Session = Depends(get_db)):
     return {"message": "Perfil eliminado exitosamente"}
 
 # ==========================================================
+# Funcion para consultar los analisis de los candidatos.
+# ==========================================================
+
+@app.get("/analisis/", response_model=List[AnalizeSchema])
+def listar_analisis(
+    db: Session = Depends(get_db),
+    name: Optional[str] = None,
+    job_title: Optional[str] = None,
+    order_by: Optional[str] = "match_score",
+    ascending: Optional[bool] = False,
+):
+    query = db.query(Analize)
+
+    if name:
+        query = query.filter(Analize.name.ilike(f"%{name}%"))
+    if job_title:
+        query = query.filter(Analize.job_title.ilike(f"%{job_title}%"))
+
+    order_field = getattr(Analize, order_by)
+    query = query.order_by(order_field.asc() if ascending else order_field.desc())
+
+    return query.all()
+
+
+# ==========================================================
 # Funciones de los usuarios cuando cada vez realizan una acción de uso.
 # ==========================================================
 # función donde increment_usage se incrementa cada vez que el usuario usa la aplicación.
