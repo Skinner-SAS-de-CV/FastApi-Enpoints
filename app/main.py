@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 from pydoc import text
+from typing import List, Optional
 from user_util import onboard_user
 import uvicorn
 import PyPDF2
@@ -21,6 +22,19 @@ from openai import AsyncOpenAI
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from config import ORIGINS, OPENAI_API_KEY, OPENAI_BASE_URL
+
+# acá pongo la clase de  AnalizeSchema.
+class AnalizeSchema(BaseModel):
+    id: int
+    name: str
+    job_title: str
+    match_score: float
+    feedback: str    
+    decision: str
+    file_name: str
+    create_at: datetime
+    class Config:
+        orm_mode = True
 
 # segun lo que lei y con chatgpt hacemos un executor para manejar las tareas asincronas globales.
 executor = ThreadPoolExecutor()
