@@ -32,7 +32,7 @@ class AnalizeSchema(BaseModel):
     feedback: str    
     decision: str
     file_name: str
-    create_at: datetime
+    created_at: datetime
     class Config:
         orm_mode = True
 
@@ -564,7 +564,7 @@ async def eliminar_perfil(perfil_id: int, db: Session = Depends(get_db)):
 # Funcion para consultar los analisis de los candidatos.
 # ==========================================================
 
-@app.get("/analisis/", response_model=List[AnalizeSchema])
+@app.get("/analisis/", response_model=List[AnalizeSchema],dependencies=[Depends(check_signed_in)])
 def listar_analisis(
     db: Session = Depends(get_db),
     name: Optional[str] = None,
