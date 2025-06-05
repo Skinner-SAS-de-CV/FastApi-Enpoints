@@ -79,6 +79,7 @@ class Analize(Base):
     file_name = Column(String)
     job_title = Column(String)
     name = Column(String)
+    created_at = Column(DateTime, default=datetime.now())
     
     
 
