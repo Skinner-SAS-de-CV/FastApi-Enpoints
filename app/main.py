@@ -570,7 +570,7 @@ def listar_analisis(
     name: Optional[str] = None,
     job_title: Optional[str] = None,
     order_by: Optional[str] = "match_score",
-    ascending: Optional[bool] = False,
+        ascending: Optional[bool] = False,
 ):
     query = db.query(Analize)
 
@@ -581,6 +581,8 @@ def listar_analisis(
 
     order_field = getattr(Analize, order_by)
     query = query.order_by(order_field.asc() if ascending else order_field.desc())
+    
+
 
     return query.all()
 
