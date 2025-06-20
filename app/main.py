@@ -368,13 +368,14 @@ async def analyze_resume(
     db.commit()
 
     return {
-        "analysis_id": new_analysis.id,
+        "id": new_analysis.id,
         "file_name": file.filename,
         "job_title": job.title,
         "match_score": match_score,
-        "nombre_del_candidato": nombre_del_candidato,
+        "name": new_analysis.name,
         "decision": decision,
-        "feedback": feedback if feedback is not None else "No se pudo generar feedback"
+        "feedback": feedback if feedback is not None else "No se pudo generar feedback",
+        "created_at": new_analysis.created_at
         }
 
 # Verificación de que FastAPI está funcionando en producción
