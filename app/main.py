@@ -478,6 +478,7 @@ async def feedback_candidato(
             "feedback": feedback_text
         },
         "profesion": profesion,
+        "name": f"{perfil.firstname} {perfil.lastname}",
     }
 
 @app.get("/nivel/")
