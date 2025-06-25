@@ -481,11 +481,6 @@ async def feedback_candidato(
         "name": f"{perfil.firstname} {perfil.lastname}",
     }
 
-@app.get("/nivel/")
-async def niveles(db: Session = Depends(get_db)):
-    niveles = db.query(Nivel).all()
-    return [{"name": c.name, "id": c.id} for c in niveles]
-
 # ==========================================================
 # Aqui esta el endpoint de los perfiles
 # ==========================================================
