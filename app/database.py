@@ -116,8 +116,8 @@ class Nivel(Base):
 class Usage(Base):
     __tablename__ = "uso_de_la_app"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("candidatos.id"))
-    usage_count = Column(Integer, default=0)
+    user_id = Column(Integer, ForeignKey("candidatos.id"), nullable=False)
+    usage_count = Column(Integer, default=0, nullable=False)
     usage_limit = Column(Integer, nullable=False)
     last_reset = Column(DateTime, default=datetime.utcnow) # para llevar el control de cuando se resetea el contador no se si es necesario.
     
