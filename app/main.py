@@ -2,7 +2,6 @@ from datetime import datetime
 import os
 from pydoc import text
 from typing import List, Optional
-from user_util import onboard_user
 import uvicorn
 import PyPDF2
 import docx2txt
@@ -170,23 +169,6 @@ async def agregar_trabajo(
     db.flush()
     db.commit()
     return {"message": "Trabajo, habilidades, perfil y funciones registradas exitosamente"}
-
-# Endpoint para obtener clientes
-@app.get("/clients/")
-def get_clients(db: Session = Depends(get_db)):
-    client_names = db.query(Client).all()
-    return [{"name": c.name, "id": c.id} for c in client_names]
-
-# Endpoint para **obtener trabajos por cliente usando id de cliente**
-@app.get("/obtener_trabajos_por_cliente/{id}")
-async def obtener_trabajos_por_cliente(id: int, db: Session = Depends(get_db)):
-    client = db.query(Client).filter(Client.id == id).one_or_none()
-    if not client:
-        return {"error": "Cliente no encontrado"}
-
-    jobs = db.query(Job).filter(Job.client_id == client.id).all()
-    return [{"id": job.id, "title": job.title} for job in jobs]
-
 
 
 # ==========================================================
@@ -484,37 +466,6 @@ async def feedback_candidato(
 # ==========================================================
 # Aqui esta el endpoint de los perfiles
 # ==========================================================
-@app.post("/perfiles/", dependencies=[Depends(check_signed_in)])
-async def crear_perfil(
-    firstname: str = Form(...),
-    lastname: str = Form(...),
-    birthday: datetime = Form(...),
-    nivel_id: str = Form(...),
-    country: str = Form(...),
-    db: Session = Depends(get_db),
-    user_payload: any = Depends(request_state_payload)
-):
-    """
-    Crear nuevo perfil asociado a una profesion o nivel de estudio
-    """
-    # Verificar si el nivel existe
-    nivel = db.query(Nivel).filter(Nivel.id == nivel_id).one_or_none()
-    if not nivel:
-        raise HTTPException(status_code=404, detail="Nivel no encontrado")
-
-    external_user_id = user_payload["sub"]
-    # Crear el perfil
-    nuevo_perfil = Candidate(firstname=firstname, nivel_id=nivel_id, lastname=lastname, birthday=birthday.date(), country=country, external_user_id=external_user_id )
-    db.add(nuevo_perfil)
-    db.commit()
-    db.refresh(nuevo_perfil)
-
-    # Marcar usuario como onboarded
-    onboard_user(external_user_id, str(nuevo_perfil.id))
-
-    return {"message": "Perfil creado exitosamente", "perfil": {"id": nuevo_perfil.id, "name": nuevo_perfil.firstname}}
-
-
 @app.put("/perfiles/{perfil_id}", dependencies=[Depends(check_signed_in)])
 async def actualizar_perfil(
     perfil_id: int,
