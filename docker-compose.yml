@@ -29,5 +29,14 @@ services:
     # por ejemplo, si fuera 5433:5432, aún se usa 5432 para conectar del backend!
     ports:
       - '5433:5432'
+  # El "Redis" que usamos es Valkey, que es codigo abierto y compatible con Redis.
+  valkey_skinner:
+    image: valkey/valkey:latest
+    container_name: valkey_skinner
+    ports:
+      - '6379:6379'
+    volumes:
+      - valkey_data:/data
 volumes:
   postgres:
+  valkey_data:
