@@ -175,3 +175,6 @@ cython_debug/
 
 #json
 *.json
+
+#modelos_skinner
+/app/modelo_skinner/

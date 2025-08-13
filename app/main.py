@@ -75,7 +75,9 @@ app.add_middleware(
 )
 
 # Modelo NLP para similitud semántica.
-model = SentenceTransformer("all-MiniLM-L6-v2")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "modelo_skinner")
+model = SentenceTransformer(MODEL_PATH)
 
 # ==========================================================
 # VALIDACIÓN Y SANITIZACIÓN DEL FORMULARIO DE CONTACTO
@@ -122,7 +124,7 @@ def as_contact_form(
 # ENDPOINTS para **añadir trabajos y habilidades**
 # ==========================================================
 
-@app.post("/agregar_trabajo/", dependencies=[Depends(check_signed_in)])
+@app.post("/agregar_trabajo/")
 async def agregar_trabajo(
     nombre_del_cliente: str = Form(...),
     titulo_de_trabajo: str = Form(...),
@@ -284,7 +286,7 @@ def send_notification_email(contact: Contact):
 # Analizar un CV y obtener políticas del cliente
 # ==========================================================
 
-@app.post("/analyze/", dependencies=[Depends(check_signed_in)])
+@app.post("/analyze/")
 async def analyze_resume(
     file: UploadFile = File(...),
     job_id: int = Form(...),
@@ -326,22 +328,23 @@ async def analyze_resume(
     match_score = task2.result()
 
     # Ajuste en la decisión basado en el match_score
-    if match_score >= 0.6:
-        
-        decision = "Puntaje Alto"
-        
-    elif match_score >= 0.5:
-        
-        decision = "Puntaje Promedio"
+    if match_score >= 8.5:
+        category = "Alto"
+    elif match_score >= 7.0:
+        category = "Promedio Alto"
+    elif match_score >= 6.0:
+        category = "Promedio Bajo"
+    elif match_score >= 4.0:
+        category = "Bajo"
     else:
-        decision = "Puntaje Bajo"
+        category = "Deficiente"
 
     print (feedback)
 # Guardar el análisis en la base de datos
     new_analysis = Analize(
         feedback=feedback["feedback"],
         match_score=match_score,
-        decision=decision,
+        decision=category,
         file_name=file.filename,
         job_title=job.title,
         name=nombre_del_candidato,
@@ -355,7 +358,7 @@ async def analyze_resume(
         "job_title": job.title,
         "match_score": match_score,
         "name": new_analysis.name,
-        "decision": decision,
+        "decision": category,
         "feedback": feedback if feedback is not None else "No se pudo generar feedback",
         "created_at": new_analysis.created_at
         }
