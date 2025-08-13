@@ -175,3 +175,5 @@ cython_debug/
 
 #json
 *.json
+#modelo_skinner
+app/modelo_skinner/model.safetensors
