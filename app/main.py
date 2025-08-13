@@ -398,7 +398,7 @@ async def create_contact(
 @app.post("/feedbackCandidate/", dependencies=[Depends(check_signed_in)])
 async def feedback_candidato(
     file: UploadFile = File(...),
-    profesion: str = Form(...), 
+    puesto_de_trabajo: str = Form(...), 
     user_payload: any = Depends(request_state_payload),
     db: Session = Depends(get_db)
 ):
@@ -428,11 +428,15 @@ async def feedback_candidato(
     - Áreas en las que se podría mejorar el CV.
     - Áreas donde pudiera desarrollar su carrera.
     - Sugerencias y recomendaciones para optimizar la presentación del currículum.
-    - Compara el CV con los requisitos y características de la profesión: {profesion}.
+    - Compara el CV con los requisitos y características del puesto de trabajo: {puesto_de_trabajo}.
     - Utiliza un tono amable y constructivo, ofreciendo feedback detallado y directo.
     - Si el CV es fuerte, enfatiza los aspectos positivos y brinda sugerencias para hacerlo aún mejor.
     - Si el CV es débil, destaca las áreas problemáticas y sugiere formas específicas de mejorar.
-    - Si el CV es bueno, pero no excelente, proporciona recomendaciones para llevarlo al siguiente nivel.
+    - Si el CV es bueno, pero no excelente, proporciona recomendaciones para que sea mas competitivo.
+    - Si el CV está en inglés, la retroalimentación también se brinde en inglés profesionalmente.
+    - Brinda asesoría sobre cómo adaptar el contenido del currículo a la descripción del puesto,{puesto_de_trabajo} indicando si es necesario profundizar en experiencias laborales anteriores."
+    - Y, en caso de identificar experiencias no relacionadas con el puesto, recomiende si conviene o no incluirlas.
+    - Enumera las habilidades o conocimientos que el candidato no posee y que debería adquirir para cumplir con los requisitos del puesto.
 
     Currículum:
     {resume_text}
@@ -445,7 +449,7 @@ async def feedback_candidato(
         response = await async_client.responses.create(
             model="gpt-4o-mini",
             input=[
-                {"role": "system", "content": "Eres un experto en asesorar a las personas para elaborar sus currículums de forma profesional."},
+                {"role": "system", "content": "Eres un experto en asesorar a las personas para elaborar sus currículums de forma profesional. Actúa como un experto en redacción y optimización de currículums profesionales en inglés y español o cualquier otro idioma. Proporcióna asesoramiento detallado y personalizado para mejorar el CV de los candidatos, asegurando que cumpla con los estándares internacionales y las expectativas de reclutadores en la  industria. Incluye feedback sobre: Estructura y formato: ¿Que sea claro, moderno y compatible con ATS (sistemas de seguimiento de candidatos)?, Contenido: ¿Destaca los logros cuantificables y habilidades clave para el puesto objetivo?, Idioma: ¿El tono es profesional y adaptado al contexto (inglés/español o otro idioma)? Corrige errores gramaticales o de estilo. Optimización: Sugiere palabras clave relevantes"},
                 {"role": "user", "content": prompt}
             ]
         )
@@ -459,7 +463,7 @@ async def feedback_candidato(
         "feedback": {
             "feedback": feedback_text
         },
-        "profesion": profesion,
+        "puesto_de_trabajo": puesto_de_trabajo,
         "name": f"{perfil.firstname} {perfil.lastname}",
     }
 
