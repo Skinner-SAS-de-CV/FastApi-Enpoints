@@ -284,7 +284,31 @@ def send_notification_email(contact: Contact):
 # Analizar un CV y obtener políticas del cliente
 # ==========================================================
 
-@app.post("/analyze/", dependencies=[Depends(check_signed_in)])
+def puntuacion_vieja(match_score):
+    
+    if match_score >= 6.0:
+        return min(10, match_score + 1.5)
+    elif 5.0 <= match_score < 6.0:
+        return match_score + 1.0
+    elif 4.0 <= match_score < 5.0:
+        return match_score + 0.75
+    else:
+        return match_score 
+
+def puntuacion_nueva(puntuacion_calibrada):
+    if puntuacion_calibrada >= 8.0:
+        return "Alto"
+    elif 7.0 <= puntuacion_calibrada < 8.0:
+        return "Promedio Alto"
+    elif 6.0 <= puntuacion_calibrada < 7.0:
+        return "Promedio Bajo"
+    elif 4.0 <= puntuacion_calibrada < 6.0:
+        return "Bajo"
+    else:
+        return "Deficiente"
+
+
+@app.post("/analyze/")
 async def analyze_resume(
     file: UploadFile = File(...),
     job_id: int = Form(...),
@@ -324,23 +348,17 @@ async def analyze_resume(
     # asignar los resultados de las funciones
     feedback =  task1.result()
     match_score = task2.result()
-
-    # Ajuste en la decisión basado en el match_score
-    if match_score >= 0.6:
-        
-        decision = "Puntaje Alto"
-        
-    elif match_score >= 0.5:
-        
-        decision = "Puntaje Promedio"
-    else:
-        decision = "Puntaje Bajo"
-
+    
+    match_score_escala_10 = match_score * 10
+    
+    puntuacion_calibrada = puntuacion_vieja(match_score * 10)
+    decision = puntuacion_nueva(puntuacion_calibrada)
     print (feedback)
+    
 # Guardar el análisis en la base de datos
     new_analysis = Analize(
         feedback=feedback["feedback"],
-        match_score=match_score,
+        match_score=puntuacion_calibrada,
         decision=decision,
         file_name=file.filename,
         job_title=job.title,
@@ -353,7 +371,7 @@ async def analyze_resume(
         "id": new_analysis.id,
         "file_name": file.filename,
         "job_title": job.title,
-        "match_score": match_score,
+        "match_score": puntuacion_calibrada,
         "name": new_analysis.name,
         "decision": decision,
         "feedback": feedback if feedback is not None else "No se pudo generar feedback",
