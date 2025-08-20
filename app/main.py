@@ -284,7 +284,32 @@ def send_notification_email(contact: Contact):
 # Analizar un CV y obtener políticas del cliente
 # ==========================================================
 
-@app.post("/analyze/", dependencies=[Depends(check_signed_in)])
+def puntuacion(match_score: float):
+    
+    score = match_score * 10  
+    # Calificacion vieja
+    if score >= 6.0:
+        score = min(10, score + 1.5)
+    elif 5.0 <= score < 6.0:
+        score += 1.0
+    elif 4.0 <= score < 5.0:
+        score += 0.75
+
+    # Calificacion nueva
+    if score >= 8.0:
+        decision = "Alto"
+    elif 7.0 <= score < 8.0:
+        decision = "Promedio Alto"
+    elif 6.0 <= score < 7.0:
+        decision = "Promedio Bajo"
+    elif 4.0 <= score < 6.0:
+        decision = "Bajo"
+    else:
+        decision = "Deficiente"
+
+    return round(score, 2), decision
+
+@app.post("/analyze/")
 async def analyze_resume(
     file: UploadFile = File(...),
     job_id: int = Form(...),
@@ -324,23 +349,16 @@ async def analyze_resume(
     # asignar los resultados de las funciones
     feedback =  task1.result()
     match_score = task2.result()
-
-    # Ajuste en la decisión basado en el match_score
-    if match_score >= 0.6:
-        
-        decision = "Puntaje Alto"
-        
-    elif match_score >= 0.5:
-        
-        decision = "Puntaje Promedio"
-    else:
-        decision = "Puntaje Bajo"
-
+    
+    match_score_escala_10 = match_score * 10
+    
+    puntuacion_calibrada, decision = puntuacion(match_score)
     print (feedback)
+    
 # Guardar el análisis en la base de datos
     new_analysis = Analize(
         feedback=feedback["feedback"],
-        match_score=match_score,
+        match_score=puntuacion_calibrada,
         decision=decision,
         file_name=file.filename,
         job_title=job.title,
@@ -353,7 +371,7 @@ async def analyze_resume(
         "id": new_analysis.id,
         "file_name": file.filename,
         "job_title": job.title,
-        "match_score": match_score,
+        "match_score": puntuacion_calibrada,
         "name": new_analysis.name,
         "decision": decision,
         "feedback": feedback if feedback is not None else "No se pudo generar feedback",
