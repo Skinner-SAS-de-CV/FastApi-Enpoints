@@ -284,29 +284,30 @@ def send_notification_email(contact: Contact):
 # Analizar un CV y obtener políticas del cliente
 # ==========================================================
 
-def puntuacion_vieja(match_score):
+def puntuacion(match_score: float):
     
-    if match_score >= 6.0:
-        return min(10, match_score + 1.5)
-    elif 5.0 <= match_score < 6.0:
-        return match_score + 1.0
-    elif 4.0 <= match_score < 5.0:
-        return match_score + 0.75
-    else:
-        return match_score 
+    score = match_score * 10  
+    # Calificacion vieja
+    if score >= 6.0:
+        score = min(10, score + 1.5)
+    elif 5.0 <= score < 6.0:
+        score += 1.0
+    elif 4.0 <= score < 5.0:
+        score += 0.75
 
-def puntuacion_nueva(puntuacion_calibrada):
-    if puntuacion_calibrada >= 8.0:
-        return "Alto"
-    elif 7.0 <= puntuacion_calibrada < 8.0:
-        return "Promedio Alto"
-    elif 6.0 <= puntuacion_calibrada < 7.0:
-        return "Promedio Bajo"
-    elif 4.0 <= puntuacion_calibrada < 6.0:
-        return "Bajo"
+    # Calificacion nueva
+    if score >= 8.0:
+        decision = "Alto"
+    elif 7.0 <= score < 8.0:
+        decision = "Promedio Alto"
+    elif 6.0 <= score < 7.0:
+        decision = "Promedio Bajo"
+    elif 4.0 <= score < 6.0:
+        decision = "Bajo"
     else:
-        return "Deficiente"
+        decision = "Deficiente"
 
+    return round(score, 2), decision
 
 @app.post("/analyze/")
 async def analyze_resume(
@@ -351,8 +352,7 @@ async def analyze_resume(
     
     match_score_escala_10 = match_score * 10
     
-    puntuacion_calibrada = puntuacion_vieja(match_score * 10)
-    decision = puntuacion_nueva(puntuacion_calibrada)
+    puntuacion_calibrada, decision = puntuacion(match_score)
     print (feedback)
     
 # Guardar el análisis en la base de datos
