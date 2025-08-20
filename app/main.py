@@ -309,7 +309,7 @@ def puntuacion(match_score: float):
 
     return round(score, 2), decision
 
-@app.post("/analyze/")
+@app.post("/analyze/", dependencies=[Depends(check_signed_in)])
 async def analyze_resume(
     file: UploadFile = File(...),
     job_id: int = Form(...),
@@ -349,8 +349,6 @@ async def analyze_resume(
     # asignar los resultados de las funciones
     feedback =  task1.result()
     match_score = task2.result()
-    
-    match_score_escala_10 = match_score * 10
     
     puntuacion_calibrada, decision = puntuacion(match_score)
     print (feedback)
