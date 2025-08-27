@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, Text, DateTime, Float, Date
+from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, Text, DateTime, Float, Date, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
@@ -26,9 +26,14 @@ Base = declarative_base()
 class Client(Base):
     __tablename__ = "clientes"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True, nullable=False)
+    name = Column(String, index=True, nullable=False)
+    user_id = Column(String, index=True, nullable=False)
 
     jobs = relationship("Job", back_populates="client", cascade="all, delete")
+    
+    __table_args__ = (UniqueConstraint('name', 'user_id', name='name_user_id_unique'),)
+    
+    
 
 #Modelo Trabajo
 class Job(Base):
@@ -36,6 +41,8 @@ class Job(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True, nullable=False)
     client_id = Column(Integer, ForeignKey("clientes.id", ondelete="CASCADE"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow) 
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     client = relationship("Client", back_populates="jobs")
     skills = relationship("Skill", back_populates="job", cascade="all, delete")

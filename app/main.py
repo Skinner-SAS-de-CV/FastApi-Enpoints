@@ -367,7 +367,7 @@ async def analyze_resume(
 
     return {
         "id": new_analysis.id,
-        "file_name": file.filename,
+        "file_name": file.filename, 
         "job_title": job.title,
         "match_score": puntuacion_calibrada,
         "name": new_analysis.name,
