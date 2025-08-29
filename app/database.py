@@ -28,7 +28,6 @@ class Client(Base):
     __tablename__ = "clientes"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
-    user_id = Column(String, index=True, nullable=False)
     
     users = relationship("User", back_populates="client", cascade="all, delete")
     jobs = relationship("Job", back_populates="client", cascade="all, delete")
@@ -40,7 +39,7 @@ class User(Base):
     firstname = Column(String, index=True, nullable=False)
     lastname = Column(String, index=True, nullable=False)
     external_user_id = Column(String, nullable=False, unique=True)
-    client_id = Column(Integer, ForeignKey("clientes.id", ondelete="CASCADE"),nullable=False)
+    client_id = Column(Integer, ForeignKey("clientes.id", ondelete="RESTRICT"),nullable=False)
 
     client = relationship("Client", back_populates="users")
     
