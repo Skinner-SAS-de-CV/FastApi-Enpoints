@@ -28,6 +28,7 @@ class Client(Base):
     __tablename__ = "clientes"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
+    external_organization_id = Column(String, nullable=True, unique=True)
     
     users = relationship("User", back_populates="client", cascade="all, delete")
     jobs = relationship("Job", back_populates="client", cascade="all, delete")
