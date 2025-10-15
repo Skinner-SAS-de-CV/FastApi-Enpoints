@@ -119,59 +119,6 @@ def as_contact_form(
     return ContactForm(name=name, name_company=name_company, email=email, message=message)
 
 # ==========================================================
-# ENDPOINTS para **añadir trabajos y habilidades**
-# ==========================================================
-
-@app.post("/agregar_trabajo/", dependencies=[Depends(check_signed_in)])
-async def agregar_trabajo(
-    nombre_del_cliente: str = Form(...),
-    titulo_de_trabajo: str = Form(...),
-    perfil_del_trabajador: str = Form(...),  
-    funciones_del_trabajo: str = Form(...),
-    habilidades: str = Form(...),  
-    db: Session = Depends(get_db)
-):
-    
-    print("📩 Recibiendo solicitud con los siguientes datos:")
-    print(f"Cliente: {nombre_del_cliente}")
-    print(f"Trabajo: {titulo_de_trabajo}")
-    print(f"Perfil: {perfil_del_trabajador}")
-    print(f"Funciones: {funciones_del_trabajo}")
-    print(f"Habilidades: {habilidades}")
-    
-    #Buscar si el cliente ya existe
-    client = db.query(Client).filter(Client.name == nombre_del_cliente).first()
-    if not client:
-        client = Client(name=nombre_del_cliente)
-        db.add(client)
-        db.flush()
-        db.commit()
-        db.refresh(client)
-
-    #Crear un nuevo trabajo
-    job = Job(title=titulo_de_trabajo, client_id=client.id)
-    db.add(job)
-    db.flush()
-    db.commit()
-    db.refresh(job)
-
-    # Guardar habilidades en la base de datos
-    for skill in habilidades.split(","):
-        db.add(Skill(name=skill.strip(), job_id=job.id))
-
-    # Guardar perfil en la base de datos
-    db.add(Profile(name=perfil_del_trabajador.strip(), job_id=job.id))
-
-    # Guardar funciones del trabajo en la base de datos
-    for function in funciones_del_trabajo.split(","):
-        db.add(Function(title=function.strip(), job_id=job.id))
-        
-    db.flush()
-    db.commit()
-    return {"message": "Trabajo, habilidades, perfil y funciones registradas exitosamente"}
-
-
-# ==========================================================
 # Funciones para analizar el CV y generar feedback
 # ==========================================================
 
@@ -408,82 +355,6 @@ async def create_contact(
         "contact": {"id": new_contact.id, "name": new_contact.name}
     }
 # ==========================================================
-# Aqui esta el endpoint feedback candidatos
-# ==========================================================
-
-@app.post("/feedbackCandidate/", dependencies=[Depends(check_signed_in)])
-async def feedback_candidato(
-    file: UploadFile = File(...),
-    puesto_de_trabajo: str = Form(...), 
-    user_payload: any = Depends(request_state_payload),
-    db: Session = Depends(get_db)
-):
-    perfil = db.query(Candidate).filter(Candidate.external_user_id == user_payload["sub"]).one_or_none()
-    if not perfil:
-        raise HTTPException(status_code=404, detail="perfil no encontrado")
-    if not can_use_app (user_id = perfil.id, db=db): 
-        raise HTTPException(status_code=403, detail="Has alcanzado tu límite de uso. Por favor, actualiza tu plan para continuar.")
-    
-    # Validar tipo de archivo
-    if not (file.filename.endswith(".pdf") or file.filename.endswith(".docx")):
-        raise HTTPException(status_code=400, detail="Solo se aceptan archivos PDF o DOCX.")
-
-    # Extraer texto del archivo
-    resume_text = extract_text(file)
-
-    # Validar que el texto extraído no esté vacío
-    if not resume_text.strip():
-        raise HTTPException(status_code=400, detail="El archivo no contiene texto válido.")
-    
-    
-    # Crear prompt
-    prompt = f"""
-    Eres un asesor experto en recursos humanos y especialista en evaluar currículums. 
-    Por favor, revisa cuidadosamente el siguiente CV y proporciona un análisis equilibrado que incluya:
-    - Las fortalezas y habilidades clave del candidato.
-    - Áreas en las que se podría mejorar el CV.
-    - Áreas donde pudiera desarrollar su carrera.
-    - Sugerencias y recomendaciones para optimizar la presentación del currículum.
-    - Compara el CV con los requisitos y características del puesto de trabajo: {puesto_de_trabajo}.
-    - Utiliza un tono amable y constructivo, ofreciendo feedback detallado y directo.
-    - Si el CV es fuerte, enfatiza los aspectos positivos y brinda sugerencias para hacerlo aún mejor.
-    - Si el CV es débil, destaca las áreas problemáticas y sugiere formas específicas de mejorar.
-    - Si el CV es bueno, pero no excelente, proporciona recomendaciones para que sea mas competitivo.
-    - Si el CV está en inglés, la retroalimentación también se brinde en inglés profesionalmente.
-    - Brinda asesoría sobre cómo adaptar el contenido del currículo a la descripción del puesto,{puesto_de_trabajo} indicando si es necesario profundizar en experiencias laborales anteriores."
-    - Y, en caso de identificar experiencias no relacionadas con el puesto, recomiende si conviene o no incluirlas.
-    - Enumera las habilidades o conocimientos que el candidato no posee y que debería adquirir para cumplir con los requisitos del puesto.
-
-    Currículum:
-    {resume_text}
-
-    Feedback:
-    """
-
-    # Llamar a la API de OpenAI para generar el feedback
-    try:
-        response = await async_client.responses.create(
-            model="gpt-4o-mini",
-            input=[
-                {"role": "system", "content": "Eres un experto en asesorar a las personas para elaborar sus currículums de forma profesional. Actúa como un experto en redacción y optimización de currículums profesionales en inglés y español o cualquier otro idioma. Proporcióna asesoramiento detallado y personalizado para mejorar el CV de los candidatos, asegurando que cumpla con los estándares internacionales y las expectativas de reclutadores en la  industria. Incluye feedback sobre: Estructura y formato: ¿Que sea claro, moderno y compatible con ATS (sistemas de seguimiento de candidatos)?, Contenido: ¿Destaca los logros cuantificables y habilidades clave para el puesto objetivo?, Idioma: ¿El tono es profesional y adaptado al contexto (inglés/español o otro idioma)? Corrige errores gramaticales o de estilo. Optimización: Sugiere palabras clave relevantes"},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        feedback_text = response.output_text
-        increment_usage(user_id = perfil.id, db=db)  # Incrementar el uso de la app
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al comunicarse con OpenAI: {e}")
-
-    # Retornar el feedback generado
-    return {
-        "feedback": {
-            "feedback": feedback_text
-        },
-        "puesto_de_trabajo": puesto_de_trabajo,
-        "name": f"{perfil.firstname} {perfil.lastname}",
-    }
-
-# ==========================================================
 # Aqui esta el endpoint de los perfiles
 # ==========================================================
 @app.put("/perfiles/{perfil_id}", dependencies=[Depends(check_signed_in)])
@@ -554,31 +425,6 @@ def listar_analisis(
 
     return query.all()
 
-
-# ==========================================================
-# Funciones de los usuarios cuando cada vez realizan una acción de uso.
-# ==========================================================
-# función donde increment_usage se incrementa cada vez que el usuario usa la aplicación.
-def increment_usage(user_id: int, db: Session =Depends(get_db)):
-    usage = db.query(Usage).filter(Usage.user_id == user_id).first()
-    if usage.usage_count < usage.usage_limit:
-        usage.usage_count += 1
-        db.commit()
-        return True
-    else:
-        return False # si el usuario ha alcanzado su límite de uso, no se incrementa el contador.
-    
-# Bloquear el acceso si el usuario ha alcanzado su límite de uso
-def can_use_app(user_id: int, db: Session = Depends(get_db)):
-    usage = db.query(Usage).filter(Usage.user_id == user_id).first()  # Si can_use_app devuelve False significa que el usuario no puede usar mas la app.
-    return usage.usage_count < usage.usage_limit
-
-# Integrar con  el metodo de pago.
-def upgrade_plan(user_id, new_limit: int, db: Session = Depends(get_db)):
-    usage = db.query(Usage).filter(Usage.user_id == user_id).first() 
-    usage.usage_limit = usage.usage_limit + new_limit
-    db.commit() 
-    return usage.usage_limit
 
 
 # Configuración para producción
