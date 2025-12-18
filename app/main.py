@@ -185,7 +185,7 @@ async def generate_gpt_feedback_async(resume_text: str = Form(...), nombre_del_c
     """
 
     response = await async_client.responses.create(
-        model="gpt-4o-mini",
+        model="gpt-5-mini",
         input=[{"role": "system", "content": "Eres un experto en selección de talento humano."},
                   {"role": "user", "content": prompt}]
     )
