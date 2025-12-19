@@ -176,6 +176,7 @@ async def generate_gpt_feedback_async(resume_text: str = Form(...), nombre_del_c
     - Explica si tiene las habilidades requeridas o no.
     - Analiza si cumple con las funciones y requisitos del cliente.
     - Da una recomendación final sobre si el candidato es adecuado para el puesto segun con el match_core.
+    -Si el CV está en inglés, la retroalimentación también se brinde en inglés profesionalmente.
 
     ** Formato de respuesta esperado:**
     - **Puntos Fuertes:** 
@@ -186,7 +187,7 @@ async def generate_gpt_feedback_async(resume_text: str = Form(...), nombre_del_c
 
     response = await async_client.responses.create(
         model="gpt-5-mini",
-        input=[{"role": "system", "content": "Eres un experto en selección de talento humano."},
+        input=[{"role": "system", "content": "Eres un experto en selección de talento humano. Actúa como un asesor experto para seleccionar al mejor personal para las empresas, eres experto en redacción y analisis de currículums profesionales en inglés y español o cualquier otro idioma y da el feedback ya sea en inglés o español o cualquier otro idioma."},
                   {"role": "user", "content": prompt}]
     )
     
