@@ -99,6 +99,7 @@ class Analize(Base):
     job_title = Column(String)
     name = Column(String)
     created_at = Column(DateTime, default=datetime.now())
+    external_organization_id = Column(String, nullable=True)
     
     
 
