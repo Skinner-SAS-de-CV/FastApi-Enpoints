@@ -32,6 +32,7 @@ class Client(Base):
     
     users = relationship("User", back_populates="client", cascade="all, delete")
     jobs = relationship("Job", back_populates="client", cascade="all, delete")
+    analisis = relationship("Analize", back_populates="client", cascade="all, delete")
     
  #Modelo Usuario
 class User(Base):
@@ -99,6 +100,9 @@ class Analize(Base):
     job_title = Column(String)
     name = Column(String)
     created_at = Column(DateTime, default=datetime.now())
+    client_id = Column(Integer,ForeignKey("clientes.id", ondelete="CASCADE"), nullable=False)
+
+    client = relationship("Client", back_populates="analisis")
     
     
 
