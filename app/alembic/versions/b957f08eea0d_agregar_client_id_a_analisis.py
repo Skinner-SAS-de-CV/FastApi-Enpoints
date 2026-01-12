@@ -24,7 +24,15 @@ def upgrade() -> None:
     op.execute('DELETE FROM analisis')
     op.add_column('analisis', sa.Column('client_id', sa.Integer(), nullable=False))
     op.create_foreign_key(None, 'analisis', 'clientes', ['client_id'], ['id'], ondelete='CASCADE')
-    op.drop_column('analisis', 'external_organization_id')
+    # Solo borrar si la columna existe (puede no existir en algunos ambientes)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='analisis' AND column_name='external_organization_id') THEN
+                ALTER TABLE analisis DROP COLUMN external_organization_id;
+            END IF;
+        END $$;
+    """)
     # ### end Alembic commands ###
 
 
