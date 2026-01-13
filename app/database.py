@@ -93,7 +93,7 @@ class Skill(Base):
 class Analize(Base):
     __tablename__ = "analisis"
     id = Column(Integer, primary_key=True, index=True)
-    feedback = Column(Text, index=True, nullable=False)
+    feedback = Column(Text, nullable=False)
     match_score = Column(Float)
     decision = Column(String)
     file_name = Column(String)
