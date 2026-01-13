@@ -309,6 +309,7 @@ async def analyze_resume(
         file_name=file.filename,
         job_title=job.title,
         name=nombre_del_candidato,
+        client_id=client_id
     )
     db.add(new_analysis)
     db.commit()
