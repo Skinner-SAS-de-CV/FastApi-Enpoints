@@ -151,44 +151,53 @@ async def match_resume_to_job_async(resume_text: str, funciones_del_trabajo: str
 async def generate_gpt_feedback_async(resume_text: str = Form(...), nombre_del_cliente: str = (Form(...)), funciones_del_trabajo: str = Form(...), perfil_del_trabajador: str = Form(...)) -> str:
 
     prompt = f"""
-    Un cliente llamado **{nombre_del_cliente}** está buscando contratar a un candidato para un puesto específico. 
-    Este cliente tiene las siguientes políticas y requisitos de contratación:
+ Los siguientes datos provienen de la base de datos interna del cliente.
 
-    --- Funciones del Cliente ---
-    
-   - Lee la base de datos segun **{nombre_del_cliente}** que a sugerido para el puesto de trabajo.
-    
+## Cliente
+{nombre_del_cliente}
 
-    --- 🎯 Perfil del Candidato Requerido ---
-    - Analisa el **{perfil_del_trabajador}** si cumple con las habilidades del puesto de trabajo.
-    
+## Perfil requerido (base de datos)
+{perfil_del_trabajador}
 
-    --- 🏢 Descripción del Trabajo ---
-    
-    -Analisa si el candidato cumple con la **{funciones_del_trabajo}**.
-    
+## Funciones del puesto (base de datos)
+{funciones_del_trabajo}
 
-    --- 📄 Currículum del Candidato ---
-    {resume_text}
+## Currículum del candidato
+{resume_text}
 
-    **Tareas a realizar:**
-    - Resume los puntos fuertes y débiles del candidato.
-    - Explica si tiene las habilidades requeridas o no.
-    - Analiza si cumple con las funciones y requisitos del cliente.
-    - Da una recomendación final sobre si el candidato es adecuado para el puesto segun con el match_core.
-    -Si el CV está en inglés, la retroalimentación también se brinde en inglés profesionalmente.
+## Tareas
+1. Identificar fortalezas relevantes para el puesto.
+2. Identificar debilidades o brechas frente al perfil requerido.
+3. Evaluar el nivel de cumplimiento del perfil (Alto / Medio / Bajo).
+4. Justificar cualitativamente el match score calculado por el sistema.
+5. Emitir una recomendación final clara y profesional.
 
-    ** Formato de respuesta esperado:**
-    - **Puntos Fuertes:** 
-    - **Puntos Débiles:** 
-    - **Cumplimiento con el perfil:** 
-    - **Recomendación final:**
-    """
+## Formato obligatorio
+- **Fortalezas**
+- **Debilidades**
+- **Nivel de cumplimiento**
+- **Justificación del match**
+- **Recomendación final**
+"""
 
     response = await async_client.responses.create(
         model="gpt-5-mini",
-        input=[{"role": "system", "content": "Eres un experto en selección de talento humano. Actúa como un asesor experto para seleccionar al mejor personal para las empresas, eres experto en redacción y analisis de currículums profesionales en inglés y español o cualquier otro idioma y da el feedback ya sea en inglés o español o cualquier otro idioma."},
-                  {"role": "user", "content": prompt}]
+        input=[
+            {
+                "role": "system",
+                "content": """Eres un motor profesional de análisis de currículums usado en procesos de selección.
+Reglas:
+- No inventes información.
+- No asumas experiencia no presente en el CV.
+- No recalcules puntuaciones numéricas.
+- Limítate a analizar y justificar los datos proporcionados.
+
+Idioma:
+- Devuelve el análisis exclusivamente en el mismo idioma del currículum.
+- No traduzcas ni mezcles idiomas."""
+            },
+            {"role": "user", "content": prompt}
+        ]
     )
     
     feedback_text = response.output_text
