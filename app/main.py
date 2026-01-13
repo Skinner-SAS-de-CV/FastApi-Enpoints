@@ -193,8 +193,10 @@ Reglas:
 - Limítate a analizar y justificar los datos proporcionados.
 
 Idioma:
-- Devuelve el análisis exclusivamente en el mismo idioma del currículum.
-- No traduzcas ni mezcles idiomas."""
+- IMPORTANTE: Responde ÚNICAMENTE en el idioma del currículum.
+- Si el CV está en inglés, toda tu respuesta debe ser en inglés.
+- Si el CV está en español, toda tu respuesta debe ser en español.
+- Nunca mezcles idiomas."""
             },
             {"role": "user", "content": prompt}
         ]
