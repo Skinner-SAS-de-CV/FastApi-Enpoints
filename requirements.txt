@@ -67,3 +67,4 @@ bleach==6.2.0
 pydantic[email]
 asyncio==3.4.3
 clerk-backend-api==2.0.2
+fasttext-wheel==0.9.2
