@@ -177,3 +177,6 @@ cython_debug/
 *.json
 #modelo_skinner
 app/modelo_skinner/model.safetensors
+
+#claude
+CLAUDE.md 

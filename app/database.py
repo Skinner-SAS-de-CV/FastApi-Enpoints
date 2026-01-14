@@ -32,7 +32,6 @@ class Client(Base):
     
     users = relationship("User", back_populates="client", cascade="all, delete")
     jobs = relationship("Job", back_populates="client", cascade="all, delete")
-    analisis = relationship("Analize", back_populates="client", cascade="all, delete")
     
  #Modelo Usuario
 class User(Base):
@@ -61,6 +60,7 @@ class Job(Base):
     skills = relationship("Skill", back_populates="job", cascade="all, delete")
     functions = relationship("Function", back_populates="job", cascade="all, delete")
     profile = relationship("Profile", back_populates="job", cascade="all, delete")
+    analisis = relationship("Analize", back_populates="job", cascade="all, delete")
 
 #Modelo Funciones del Trabajo
 class Function(Base):
@@ -100,9 +100,9 @@ class Analize(Base):
     job_title = Column(String)
     name = Column(String)
     created_at = Column(DateTime, default=datetime.now())
-    client_id = Column(Integer,ForeignKey("clientes.id", ondelete="CASCADE"), nullable=False)
+    job_id = Column(Integer, ForeignKey("tipos_de_trabajo.id", ondelete="CASCADE"), nullable=False)
 
-    client = relationship("Client", back_populates="analisis")
+    job = relationship("Job", back_populates="analisis")
     
     
 
