@@ -12,4 +12,4 @@ RUN mkdir -p /opt/models && \
 
 COPY ./app /app/app
 
-CMD ["sh", "-c", "uvicorn main:app --port ${PORT:-80} --app-dir app --host 0.0.0.0"]
+CMD uvicorn main:app --port $PORT --app-dir app --host 0.0.0.0
