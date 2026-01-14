@@ -21,6 +21,19 @@ from openai import AsyncOpenAI
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from config import ORIGINS, OPENAI_API_KEY, OPENAI_BASE_URL
+import fasttext
+
+# Cargar modelo FastText para detección de idioma
+fasttext_model = fasttext.load_model('/opt/models/lid.176.bin')
+
+def detectar_idioma(texto: str) -> str:
+    """Detecta el idioma del texto usando FastText"""
+    texto_limpio = texto.replace('\n', ' ').strip()
+    if not texto_limpio:
+        return 'es'  # Default español
+    prediccion = fasttext_model.predict(texto_limpio, k=1)
+    idioma = prediccion[0][0].replace('__label__', '')
+    return idioma
 
 # acá pongo la clase de  AnalizeSchema.
 class AnalizeSchema(BaseModel):
@@ -150,6 +163,9 @@ async def match_resume_to_job_async(resume_text: str, funciones_del_trabajo: str
 # Generar un feedback detallado usando GPT-4o-mini
 async def generate_gpt_feedback_async(resume_text: str = Form(...), nombre_del_cliente: str = (Form(...)), funciones_del_trabajo: str = Form(...), perfil_del_trabajador: str = Form(...)) -> str:
 
+    idioma_cv = detectar_idioma(resume_text)
+    idioma_respuesta = "Spanish" if idioma_cv == "es" else "English"
+
     prompt = f"""
  Los siguientes datos provienen de la base de datos interna del cliente.
 
@@ -158,6 +174,7 @@ async def generate_gpt_feedback_async(resume_text: str = Form(...), nombre_del_c
 
 ## Perfil requerido (base de datos)
 {perfil_del_trabajador}
+
 
 ## Funciones del puesto (base de datos)
 {funciones_del_trabajo}
@@ -185,18 +202,16 @@ async def generate_gpt_feedback_async(resume_text: str = Form(...), nombre_del_c
         input=[
             {
                 "role": "system",
-                "content": """Eres un motor profesional de análisis de currículums usado en procesos de selección.
+                "content": f"""Eres un motor profesional de análisis de currículums usado en procesos de selección.
+
+                MANDATORY: Responde solo en {idioma_respuesta}. No uses otro lenguaje.
+                
+
 Reglas:
 - No inventes información.
 - No asumas experiencia no presente en el CV.
 - No recalcules puntuaciones numéricas.
-- Limítate a analizar y justificar los datos proporcionados.
-
-Idioma:
-- IMPORTANTE: Responde ÚNICAMENTE en el idioma del currículum.
-- Si el CV está en inglés, toda tu respuesta debe ser en inglés.
-- Si el CV está en español, toda tu respuesta debe ser en español.
-- Nunca mezcles idiomas."""
+- Limítate a analizar y justificar los datos proporcionados."""
             },
             {"role": "user", "content": prompt}
         ]
@@ -320,7 +335,7 @@ async def analyze_resume(
         file_name=file.filename,
         job_title=job.title,
         name=nombre_del_candidato,
-        client_id=client_id
+        job_id=job_id
     )
     db.add(new_analysis)
     db.commit()
@@ -418,13 +433,22 @@ async def eliminar_perfil(perfil_id: int, db: Session = Depends(get_db)):
 
 @app.get("/analisis/", response_model=List[AnalizeSchema],dependencies=[Depends(check_signed_in)])
 def listar_analisis(
+    request: Request,
     db: Session = Depends(get_db),
     name: Optional[str] = None,
     job_title: Optional[str] = None,
     order_by: Optional[str] = "match_score",
-        ascending: Optional[bool] = False,
+    ascending: Optional[bool] = False,
 ):
-    query = db.query(Analize)
+    # Obtener el org_id del usuario autenticado
+    payload = request_state_payload(request)
+    org_id = payload.get("org_id") if payload else None
+
+    # Filtrar análisis por organización a través de Job -> Client
+    query = db.query(Analize).join(Job).join(Client)
+
+    if org_id:
+        query = query.filter(Client.external_organization_id == org_id)
 
     if name:
         query = query.filter(Analize.name.ilike(f"%{name}%"))
@@ -433,8 +457,6 @@ def listar_analisis(
 
     order_field = getattr(Analize, order_by)
     query = query.order_by(order_field.asc() if ascending else order_field.desc())
-    
-
 
     return query.all()
 
