@@ -17,4 +17,4 @@ RUN mkdir -p /opt/models && \
 
 COPY app ./app
 
-CMD sh -c "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2"
+CMD sh -c "uvicorn main:app --app-dir app --host 0.0.0.0 --port $PORT --workers 2"
