@@ -61,7 +61,7 @@ wheel==0.45.1
 openai==1.75.0
 python-dotenv==1.0.1
 SQLAlchemy==2.0.38
-psycopg2==2.9.10
+psycopg2-binary
 alembic==1.15.1
 bleach==6.2.0
 pydantic[email]
