@@ -55,6 +55,7 @@ class Job(Base):
     client_id = Column(Integer, ForeignKey("clientes.id", ondelete="CASCADE"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow) 
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    deleted_at = Column(DateTime, nullable=True, default=None)
 
     client = relationship("Client", back_populates="jobs")
     skills = relationship("Skill", back_populates="job", cascade="all, delete")
@@ -100,6 +101,7 @@ class Analize(Base):
     job_title = Column(String)
     name = Column(String)
     created_at = Column(DateTime, default=datetime.now())
+    deleted_at = Column(DateTime,nullable=True, default=None)
     job_id = Column(Integer, ForeignKey("tipos_de_trabajo.id", ondelete="CASCADE"), nullable=False)
 
     job = relationship("Job", back_populates="analisis")

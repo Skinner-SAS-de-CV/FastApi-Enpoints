@@ -297,7 +297,7 @@ async def analyze_resume(
         return {"error": "Cliente no encontrado"}
 
     # Obtener el trabajo desde la base de datos
-    job = db.query(Job).filter(Job.id == job_id).one_or_none()
+    job = db.query(Job).filter(Job.id == job_id, Job.deleted_at == None).one_or_none()
     if not job:
         return {"error": "Trabajo no encontrado"}
 
@@ -445,7 +445,7 @@ def listar_analisis(
     org_id = payload.get("org_id") if payload else None
 
     # Filtrar análisis por organización a través de Job -> Client
-    query = db.query(Analize).join(Job).join(Client)
+    query = db.query(Analize).join(Job).join(Client).filter(Analize.deleted_at == None) #nunca devuelve analisis que fueron borrados
 
     if org_id:
         query = query.filter(Client.external_organization_id == org_id)
