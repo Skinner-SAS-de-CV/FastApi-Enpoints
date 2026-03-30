@@ -52,7 +52,6 @@ class AnalizeSchema(BaseModel):
 executor = ThreadPoolExecutor()
 from auth import is_signed_in, request_state_payload
 
-
 # Cargar variables de entorno
 load_dotenv(override=True)
 
@@ -73,7 +72,6 @@ def get_db():
         yield db
     finally: 
         db.close()
-
 
 async def check_signed_in(request: Request):
     if not is_signed_in(request):
@@ -116,10 +114,6 @@ class ContactForm(BaseModel):
     def message_must_have_min_length(cls, v):
         if len(v.strip()) < 10:
             raise ValueError("El mensaje debe tener al menos 10 caracteres")
-        # Sanitizamos el mensaje para eliminar etiquetas HTML potencialmente maliciosas
-        #está es una buena práctica para evitar ataques XSS
-        # y otros problemas de seguridad.
-        #así que lo hacemos con la librería bleach.
         return bleach.clean(v)
 
 # Dependency para extraer y validar los datos del formulario
@@ -143,14 +137,14 @@ def extract_text(file: UploadFile) -> str:
         text = " ".join(page.extract_text() for page in pdf_reader.pages if page.extract_text())
     elif file.filename.endswith(".docx"):
         text = docx2txt.process(file.file)
-    return text.lower()  # Convertir todo a minúsculas para evitar errores de coincidencia
+    return text.lower()
 
 # Función para extraer experiencia en años usando expresiones regulares
 def extract_experience(text: str) -> list:
     experience = re.findall(r"(\d+)\s*(?:años|years)", text)
     return experience if experience else []
 
-# Función para calcular la similitud semántica entre el CV y la descripción del trabajo y el ThreadPoolExecutor
+# Función para calcular la similitud semántica
 def match_resume_to_job_sync(resume_text: str, funciones_del_trabajo: str) -> float:
     embeddings = model.encode([resume_text, funciones_del_trabajo], convert_to_tensor=True)
     score = util.pytorch_cos_sim(embeddings[0], embeddings[1]).item()
@@ -160,7 +154,7 @@ async def match_resume_to_job_async(resume_text: str, funciones_del_trabajo: str
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(executor, match_resume_to_job_sync, resume_text, funciones_del_trabajo)
 
-# Generar un feedback detallado usando GPT-4o-mini
+# Generar un feedback detallado usando GPT
 async def generate_gpt_feedback_async(resume_text: str = Form(...), nombre_del_cliente: str = (Form(...)), funciones_del_trabajo: str = Form(...), perfil_del_trabajador: str = Form(...)) -> str:
 
     idioma_cv = detectar_idioma(resume_text)
@@ -174,7 +168,6 @@ async def generate_gpt_feedback_async(resume_text: str = Form(...), nombre_del_c
 
 ## Perfil requerido (base de datos)
 {perfil_del_trabajador}
-
 
 ## Funciones del puesto (base de datos)
 {funciones_del_trabajo}
@@ -203,10 +196,7 @@ async def generate_gpt_feedback_async(resume_text: str = Form(...), nombre_del_c
             {
                 "role": "system",
                 "content": f"""Eres un motor profesional de análisis de currículums usado en procesos de selección.
-
                 MANDATORY: Responde solo en {idioma_respuesta}. No uses otro lenguaje.
-                
-
 Reglas:
 - No inventes información.
 - No asumas experiencia no presente en el CV.
@@ -218,18 +208,17 @@ Reglas:
     )
     
     feedback_text = response.output_text
-     
-    return{"feedback": feedback_text}
+    return {"feedback": feedback_text}
 
 # ==========================================================
-# Funcion para enviar un correo electrónico y notificación etc...
+# Funcion para enviar un correo electrónico
 # ==========================================================
 
 def send_notification_email(contact: Contact):
     EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
     EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD")
     if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
-        print("No se configuró EMAIL_ADDRESS o EMAIL_PASSWORD asi que hazlo")
+        print("No se configuró EMAIL_ADDRESS o EMAIL_PASSWORD")
         return
 
     msg = EmailMessage()
@@ -253,15 +242,12 @@ def send_notification_email(contact: Contact):
     except Exception as e:
         print(f"Error al enviar email: {e}")
 
-
 # ==========================================================
 # Analizar un CV y obtener políticas del cliente
 # ==========================================================
 
 def puntuacion(match_score: float):
-    
     score = match_score * 10  
-    # Calificacion vieja
     if score >= 6.0:
         score = min(10, score + 1.5)
     elif 5.0 <= score < 6.0:
@@ -269,7 +255,6 @@ def puntuacion(match_score: float):
     elif 4.0 <= score < 5.0:
         score += 0.75
 
-    # Calificacion nueva
     if score >= 8.0:
         decision = "Alto"
     elif 7.0 <= score < 8.0:
@@ -291,28 +276,18 @@ async def analyze_resume(
     nombre_del_candidato: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    # Obtener el cliente
     client = db.query(Client).filter(Client.id == client_id).one_or_none()
     if not client:
         return {"error": "Cliente no encontrado"}
 
-    # Obtener el trabajo desde la base de datos
     job = db.query(Job).filter(Job.id == job_id).one_or_none()
     if not job:
         return {"error": "Trabajo no encontrado"}
 
     funciones_del_trabajo = ", ".join([f.title for f in job.functions]) if job.functions else "No especificado"
-
-    # Obtener perfil del trabajador
     perfil_del_trabajador = ", ".join([p.name for p in db.query(Profile).filter(Profile.job_id == job.id).all()])
-
     
-    
-    # Extraer texto del CV
     resume_text = extract_text(file)
-
-    # lanzo la tareas asíncrona con TaskGroup
-    # para calcular match_score y generar el feedback de chatGPT
 
     async with asyncio.TaskGroup() as tg:
         task1 = tg.create_task(
@@ -320,14 +295,11 @@ async def analyze_resume(
         task2 = tg.create_task(
             match_resume_to_job_async(resume_text, funciones_del_trabajo))
 
-    # asignar los resultados de las funciones
     feedback =  task1.result()
     match_score = task2.result()
     
     puntuacion_calibrada, decision = puntuacion(match_score)
-    print (feedback)
     
-# Guardar el análisis en la base de datos
     new_analysis = Analize(
         feedback=feedback["feedback"],
         match_score=puntuacion_calibrada,
@@ -351,15 +323,9 @@ async def analyze_resume(
         "created_at": new_analysis.created_at
         }
 
-# Verificación de que FastAPI está funcionando en producción
 @app.get("/")
 def read_root():
     return {"message": "FastAPI funcionando correctamente en Railway!"}
-
-
-# ==========================================================
-# Aqui esta el endpoint para contactos
-# ==========================================================
 
 @app.post("/contactanos/")
 async def create_contact(
@@ -375,16 +341,13 @@ async def create_contact(
     db.commit()
     db.refresh(new_contact)
 
-    # Aqui mandamos la notificacion al correo... 
     background_tasks.add_task(send_notification_email, new_contact)
     
     return {
         "message": "Tu mensaje ha sido recibido. ¡Pronto nos pondremos en contacto!",
         "contact": {"id": new_contact.id, "name": new_contact.name}
     }
-# ==========================================================
-# Aqui esta el endpoint de los perfiles
-# ==========================================================
+
 @app.put("/perfiles/{perfil_id}", dependencies=[Depends(check_signed_in)])
 async def actualizar_perfil(
     perfil_id: int,
@@ -395,9 +358,6 @@ async def actualizar_perfil(
     country: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    """
-    Actualizar un perfil existente.
-    """
     perfil = db.query(Candidate).filter(Candidate.id == perfil_id).one_or_none()
     if not perfil:
         raise HTTPException(status_code=404, detail="Perfil no encontrado")
@@ -412,12 +372,8 @@ async def actualizar_perfil(
 
     return {"message": "Perfil actualizado exitosamente", "perfil": {"id": perfil.id, "name": perfil.firstname}}
 
-
 @app.delete("/perfiles/{perfil_id}", dependencies=[Depends(check_signed_in)])
 async def eliminar_perfil(perfil_id: int, db: Session = Depends(get_db)):
-    """
-    Eliminar un perfil existente.
-    """
     perfil = db.query(Candidate).filter(Candidate.id == perfil_id).one_or_none()
     if not perfil:
         raise HTTPException(status_code=404, detail="Perfil no encontrado")
@@ -427,11 +383,7 @@ async def eliminar_perfil(perfil_id: int, db: Session = Depends(get_db)):
 
     return {"message": "Perfil eliminado exitosamente"}
 
-# ==========================================================
-# Funcion para consultar los analisis de los candidatos.
-# ==========================================================
-
-@app.get("/analisis/", response_model=List[AnalizeSchema],dependencies=[Depends(check_signed_in)])
+@app.get("/analisis/", response_model=List[AnalizeSchema], dependencies=[Depends(check_signed_in)])
 def listar_analisis(
     request: Request,
     db: Session = Depends(get_db),
@@ -440,11 +392,9 @@ def listar_analisis(
     order_by: Optional[str] = "match_score",
     ascending: Optional[bool] = False,
 ):
-    # Obtener el org_id del usuario autenticado
     payload = request_state_payload(request)
     org_id = payload.get("org_id") if payload else None
 
-    # Filtrar análisis por organización a través de Job -> Client
     query = db.query(Analize).join(Job).join(Client)
 
     if org_id:
@@ -460,9 +410,6 @@ def listar_analisis(
 
     return query.all()
 
-
-
-# Configuración para producción
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000)) 
     uvicorn.run(app, host="0.0.0.0", port=port)
