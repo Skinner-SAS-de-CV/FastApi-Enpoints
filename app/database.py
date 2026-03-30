@@ -1,7 +1,8 @@
-from sqlalchemy import create_engine, Column, String, Integer, ForeignKey, Text, DateTime, Float, Date, UniqueConstraint
+import enum as python_enum
+from sqlalchemy import create_engine, Enum, Boolean, Numeric, Index, Column, String, Integer, ForeignKey, Text, DateTime, Float, Date, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 from dotenv import load_dotenv
 
@@ -23,15 +24,95 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-#Modelo Cliente
+# Enum
+
+class PlanSlug(str, python_enum.Enum):
+    FREE = "FREE"
+    MONTHLY = "MONTHLY"
+    QUARTERLY = "QUARTERLY"
+    BIANNUAL = "BIANNUAL"
+    PREMIUM = "PREMIUM"
+    FULL_ACCESS = "FULL_ACCESS"
+
+class SubscriptionStatus(str, python_enum.Enum):
+    PENDING = "PENDING"
+    ACTIVE = "ACTIVE"
+    EXPIRED = "EXPIRED"
+    CANCELLED = "CANCELLED"
+
+
+# Modelo planes para empresas
+
+class Plan(Base):
+    __tablename__ = "planes"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    slug = Column(Enum(PlanSlug), nullable=False, unique=True)
+    name = Column(String, nullable=False)
+    price_usd = Column(Numeric(10, 2), nullable=False)
+    analyses_limit = Column(Integer, nullable=True) #None = ilimitado
+    reports_limit = Column(Integer, nullable=True) #None = ilimitado
+    duration_days = Column(Integer, nullable=True)
+    is_active     = Column(Boolean, default=True, nullable=False)
+    created_at    = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    subscriptions = relationship("Subscription", back_populates="plan")    
+
+#Modelo Suscripcion (Ligada al Cliente/Empresa)
+
+class Subscription(Base):
+    __tablename__ = "suscripciones"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    client_id     = Column(Integer, ForeignKey("clientes.id", ondelete="RESTRICT"), nullable=False)
+    plan_id       = Column(Integer, ForeignKey("planes.id", ondelete="RESTRICT"), nullable=False)
+    status        = Column(Enum(SubscriptionStatus), default=SubscriptionStatus.PENDING, nullable=False)
+    analyses_used = Column(Integer, default=0, nullable=False)
+    reports_used  = Column(Integer,default=0, nullable=False)
+    starts_at     = Column(DateTime, nullable=True)
+    expires_at    = Column(DateTime, nullable=True)
+
+    # Quien activo la suscripcion manualmente
+    activated_by  = Column(Integer, ForeignKey("usuario.id", ondelete="SET NULL"), nullable=True)
+    activated_at  = Column(DateTime, nullable=True)
+    created_at    = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at    = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    plan          = relationship("Plan", back_populates="subscriptions")
+    client        = relationship("Client", back_populates="subscriptions")
+    topups        = relationship("AnalysisTopup", back_populates="subscription")
+
+    __table_args__ = (
+        Index('ix_suscripciones_client_id', 'client_id'),
+        Index('ix_suscripciones_status', 'status'),
+        Index('ix_suscripciones_expires_at', 'expires_at'),
+    )
+
+#Modelo Topup (paquetes de 50 adicionales)
+
+class AnalysisTopup(Base):
+    __tablename__ = "topups_analisis"
+
+    id            = Column(Integer, primary_key=True, autoincrement=True)
+    subscription_id  = Column(Integer, ForeignKey("suscripciones.id", ondelete="CASCADE"), nullable=False)
+    analysis_added   = Column(Integer, default=50, nullable=False)
+    price_usd        = Column(Numeric(10, 2), nullable=False)
+    status           = Column(Enum(SubscriptionStatus), default=SubscriptionStatus.PENDING, nullable=False)
+    created_at       = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    subscription     = relationship("Subscription", back_populates="topups")
+
+
+#Modelo Cliente(Empresas)
 class Client(Base):
     __tablename__ = "clientes"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
     external_organization_id = Column(String, nullable=True)
+    contact_email = Column(String, nullable=True) #para notificaciones
+    contact_phone = Column(String, nullable=True)
     
     users = relationship("User", back_populates="client", cascade="all, delete")
     jobs = relationship("Job", back_populates="client", cascade="all, delete")
+    subscriptions = relationship("Subscription", back_populates="client")
     
  #Modelo Usuario
 class User(Base):
@@ -53,8 +134,8 @@ class Job(Base):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, index=True, nullable=False)
     client_id = Column(Integer, ForeignKey("clientes.id", ondelete="CASCADE"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow) 
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc)) 
+    updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     client = relationship("Client", back_populates="jobs")
     skills = relationship("Skill", back_populates="job", cascade="all, delete")
@@ -99,7 +180,7 @@ class Analize(Base):
     file_name = Column(String)
     job_title = Column(String)
     name = Column(String)
-    created_at = Column(DateTime, default=datetime.now())
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     job_id = Column(Integer, ForeignKey("tipos_de_trabajo.id", ondelete="CASCADE"), nullable=False)
 
     job = relationship("Job", back_populates="analisis")
@@ -142,7 +223,7 @@ class Usage(Base):
     user_id = Column(Integer, ForeignKey("candidatos.id"), nullable=False, unique=True)
     usage_count = Column(Integer, default=0, nullable=False)
     usage_limit = Column(Integer, nullable=False)
-    last_reset = Column(DateTime, default=datetime.utcnow) # para llevar el control de cuando se resetea el contador no se si es necesario.
+    last_reset = Column(DateTime, default=lambda: datetime.now(timezone.utc)) # para llevar el control de cuando se resetea el contador no se si es necesario.
     
 
 # contactos
@@ -153,7 +234,7 @@ class Contact(Base):
     name_company = Column(String, nullable=False)
     email = Column(String, nullable=False)
     message = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
         
 #Crear las tablas en PostgreSQL
 def create_tables():
